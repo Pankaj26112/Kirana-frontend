@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 const INITIAL_PRODUCTS = [
@@ -32,7 +32,7 @@ const getS = (k, fb) => { try { const d = localStorage.getItem(k); return d ? JS
 const setS = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 
 // ─── Main App ─────────────────────────────────────────────
-export default function App() {
+ function App() {
   const [users, setUsers]       = useState(() => getS("kirana_users", INITIAL_USERS));
   const [products, setProducts] = useState(() => getS("kirana_products", INITIAL_PRODUCTS));
   const [orders, setOrders]     = useState(() => getS("kirana_orders", []));
