@@ -54,6 +54,19 @@ function App() {
     }
   }, []);
 
+
+  // Auto refresh admin data every 30 seconds
+  useEffect(() => {
+    if (currentUser?.role !== 'admin') return;
+    loadAllUsers();
+    loadAllOrders();
+    const interval = setInterval(() => {
+      loadAllUsers();
+      loadAllOrders();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [page]);
+
   // ── Load data when user logs in ──
   useEffect(() => {
     if (!currentUser) return;
@@ -562,7 +575,7 @@ function App() {
           <div>
             <div style={{ background:"linear-gradient(135deg,#2C1810,#4E342E)", borderRadius:20, padding:"18px 20px", color:"white", marginBottom:18, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div><div style={{ fontWeight:800, fontSize:20, fontFamily:"'Baloo 2',sans-serif" }}>⚙️ Admin Panel</div><div style={{ fontSize:12, opacity:0.75 }}>Sirf Aapka Control!</div></div>
-              <div style={{ textAlign:"right" }}><div style={{ fontSize:11, opacity:0.8 }}>Total Bikri</div><div style={{ fontWeight:800, fontSize:22 }}>₹{orders.reduce((s,o)=>s+(Number(o.total)||0),0)}</div></div>
+              <div style={{ textAlign:"right" }}><button onClick={() => { loadAllUsers(); loadAllOrders(); loadAllAds(); showToast("✅ Data refresh ho gaya!"); }} style={{ background:"rgba(255,255,255,0.2)", color:"white", padding:"6px 12px", borderRadius:10, fontSize:12, fontWeight:700, marginBottom:6, display:"block", width:"100%" }}>🔄 Refresh</button><div style={{ fontSize:11, opacity:0.8 }}>Total Bikri</div><div style={{ fontWeight:800, fontSize:22 }}>₹{orders.reduce((s,o)=>s+(Number(o.total)||0),0)}</div></div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10, marginBottom:18 }}>
               {[
@@ -733,6 +746,7 @@ function RegisterPage({ onRegister, showToast, onSwitch, loading }) {
   const [canResend, setCanResend] = useState(false);
   const [tempToken, setTempToken] = useState("");
   const [sending, setSending] = useState(false);
+  const [demoOtp, setDemoOtp] = useState("");
   const refs = useRef([]);
 
   useEffect(() => {
@@ -753,7 +767,7 @@ function RegisterPage({ onRegister, showToast, onSwitch, loading }) {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
       setStep(2); setTimer(60); setCanResend(false); setOtp(["","","","","",""]);
-      showToast(data.demo_otp ? `📱 OTP: ${data.demo_otp}` : "OTP bhej diya gaya!");
+      if(data.demo_otp){ setDemoOtp(data.demo_otp); } else { showToast("OTP bhej diya gaya!"); }
     } catch(e) {
       showToast(e.message, "error");
     } finally {
@@ -800,7 +814,7 @@ function RegisterPage({ onRegister, showToast, onSwitch, loading }) {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
       setTimer(60); setCanResend(false); setOtp(["","","","","",""]);
-      showToast(data.demo_otp ? `📱 Nayi OTP: ${data.demo_otp}` : "OTP dobara bheja!");
+      if(data.demo_otp){ setDemoOtp(data.demo_otp); } else { showToast("OTP dobara bheja!"); }
       refs.current[0]?.focus();
     } catch(e) {
       showToast(e.message, "error");
@@ -846,6 +860,7 @@ function RegisterPage({ onRegister, showToast, onSwitch, loading }) {
         {step===2 && (
           <>
             <h2 style={{ fontWeight:800, marginBottom:8 }}>🔐 OTP Verify Karo</h2>
+            {demoOtp && <div style={{ background:"linear-gradient(135deg,#FFF8E1,#FFFDE7)", border:"2px solid #FFB300", borderRadius:16, padding:"16px 20px", marginBottom:16, textAlign:"center" }}><div style={{ fontSize:12, color:"#795548", fontWeight:700, marginBottom:8 }}>📱 Aapka OTP (Demo Mode)</div><div style={{ fontSize:42, fontWeight:800, letterSpacing:10, color:"#FF6B00", fontFamily:"monospace" }}>{demoOtp}</div><div style={{ fontSize:11, color:"#888", marginTop:8 }}>👆 Yeh 6 digit neeche box mein bharo</div></div>}
             <p style={{ color:"#888", fontSize:13, marginBottom:20 }}>
               <strong style={{ color:"#2C1810" }}>{phone}</strong> par OTP bheja gaya!<br />
               <span style={{ color:"#FF6B00", cursor:"pointer", fontWeight:700 }} onClick={() => setStep(1)}>← Number badlo</span>
