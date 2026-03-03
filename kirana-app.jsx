@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+const { useState, useEffect, useRef } = React;
 
 // ─── Backend URL ───────────────────────────────────────────────
 const API = "https://kirana-backend-production-c0bf.up.railway.app";
