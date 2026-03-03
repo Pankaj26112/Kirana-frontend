@@ -132,7 +132,7 @@ function App() {
   const loadAllUsers = async () => {
     try {
       const data = await api("/api/users", {}, currentUser?.token || getToken());
-      setAllUsers(data.users || []);
+      setAllUsers(data.salesmen || data.users || []);
     } catch { /* silent */ }
   };
 
