@@ -299,7 +299,7 @@ function App() {
     return (
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#FDF6EC", flexDirection:"column", gap:16 }}>
         <div style={{ fontSize:56 }}>🏪</div>
-        <div style={{ fontWeight:800, fontSize:18, color:"#FF6B00" }}>Shri Kirana Store</div>
+        <div style={{ fontWeight:800, fontSize:18, color:"#FF6B00" }}>Subhash Kirana Store</div>
         <div style={{ color:"#888", fontSize:14 }}>Loading...</div>
       </div>
     );
@@ -379,7 +379,7 @@ function App() {
             <div style={{ display:"flex", alignItems:"center", gap:9 }}>
               <span style={{ fontSize:24 }}>🏪</span>
               <div>
-                <div style={{ color:"white", fontWeight:800, fontSize:15, fontFamily:"'Baloo 2',sans-serif" }}>Shri Kirana</div>
+                <div style={{ color:"white", fontWeight:800, fontSize:15, fontFamily:"'Baloo 2',sans-serif" }}>Subhash Kirana</div>
                 <div style={{ color:"rgba(255,255,255,0.8)", fontSize:10 }}>{currentUser.name}</div>
               </div>
             </div>
@@ -457,7 +457,7 @@ function App() {
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))", gap:12 }}>
                 {filteredP.map(p => (
                   <div key={p.id} className="pc">
-                    <div style={{ textAlign:"center", fontSize:34, marginBottom:8 }}>{p.emoji}</div>
+                    <div style={{ textAlign:"center", marginBottom:8, height:80, display:"flex", alignItems:"center", justifyContent:"center" }}>{p.image ? <img src={p.image} alt={p.name} style={{ width:80, height:80, objectFit:"cover", borderRadius:12 }} /> : <span style={{ fontSize:44 }}>{p.emoji}</span>}</div>
                     <div style={{ fontWeight:700, fontSize:13, marginBottom:2, lineHeight:1.3 }}>{p.name}</div>
                     <div style={{ fontSize:11, color:"#999", marginBottom:5 }}>{p.unit} • {p.category}</div>
                     <div style={{ fontWeight:800, color:"#FF6B00", fontSize:18, marginBottom:4 }}>₹{p.price}</div>
@@ -484,7 +484,7 @@ function App() {
             ) : <>
               {cart.map(item => (
                 <div key={item.id} style={{ background:"#FFFDF7", border:"1px solid #F0E0C8", borderRadius:14, padding:14, marginBottom:10, display:"flex", alignItems:"center", gap:12 }}>
-                  <span style={{ fontSize:28 }}>{item.emoji}</span>
+                  <div style={{width:44,height:44,flexShrink:0,borderRadius:10,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>{item.image?<img src={item.image} alt={item.name} style={{width:44,height:44,objectFit:"cover"}}/>:<span style={{fontSize:36}}>{item.emoji}</span>}</div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontWeight:700, fontSize:14 }}>{item.name}</div>
                     <div style={{ fontSize:12, color:"#888" }}>₹{item.price} × {item.qty} = <strong style={{ color:"#FF6B00" }}>₹{item.price * item.qty}</strong></div>
@@ -588,7 +588,7 @@ function App() {
                 </div>
                 {products.map(p => (
                   <div key={p.id} style={{ background:"#FFFDF7", border:"1px solid #F0E0C8", borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10 }}>
-                    <span style={{ fontSize:28 }}>{p.emoji}</span>
+                    <div style={{width:44,height:44,flexShrink:0,borderRadius:10,overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>{p.image?<img src={p.image} alt={p.name} style={{width:44,height:44,objectFit:"cover"}}/>:<span style={{fontSize:36}}>{p.emoji}</span>}</div>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:700, fontSize:14 }}>{p.name}</div>
                       <div style={{ fontSize:11, color:"#888" }}>{p.unit} • {p.category}</div>
@@ -697,7 +697,7 @@ function LoginPage({ onLogin, onSwitch, loading }) {
     <div style={{ maxWidth:400, margin:"0 auto" }}>
       <div style={{ textAlign:"center", marginBottom:26 }}>
         <div style={{ fontSize:64 }}>🏪</div>
-        <h1 style={{ fontFamily:"'Baloo 2',sans-serif", fontWeight:800, fontSize:28, color:"#FF6B00" }}>Shri Kirana Store</h1>
+        <h1 style={{ fontFamily:"'Baloo 2',sans-serif", fontWeight:800, fontSize:28, color:"#FF6B00" }}>Subhash Kirana Store</h1>
         <p style={{ color:"#888", fontSize:14 }}>Aap bhi salesman bano, commission kamao!</p>
       </div>
       <div style={{ background:"white", borderRadius:20, padding:28, boxShadow:"0 8px 32px rgba(255,107,0,0.1)", border:"1px solid #F0E0C8" }}>
@@ -883,7 +883,7 @@ function RegisterPage({ onRegister, showToast, onSwitch, loading }) {
 // ══════════════════════════════════════════════════════════════
 function ProductModal({ product, onSave, onDelete, onClose, loading }) {
   const isEdit = !!product;
-  const [form, setForm]         = useState(product || { name:"", category:"", unit:"", price:"", commission:"", stock:"", emoji:"🛒" });
+  const [form, setForm]         = useState(product || { name:"", category:"", unit:"", price:"", commission:"", stock:"", emoji:"🛒", image:"" });
   const [selEmoji, setSelEmoji] = useState(product?.emoji || "🛒");
   const set = (k,v) => setForm(f => ({ ...f, [k]:v }));
 
