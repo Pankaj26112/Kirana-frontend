@@ -461,7 +461,7 @@ function App() {
                     <div style={{ fontWeight:700, fontSize:13, marginBottom:2, lineHeight:1.3 }}>{p.name}</div>
                     <div style={{ fontSize:11, color:"#999", marginBottom:5 }}>{p.unit} • {p.category}</div>
                     <div style={{ fontWeight:800, color:"#FF6B00", fontSize:18, marginBottom:4 }}>₹{p.price}</div>
-                    <div className="bdg" style={{ background:"#E8F5E9", color:"#2E7D32", marginBottom:10 }}>💰 {p.commission}% = ₹{Math.round(p.price * p.commission / 100)}</div>
+                    <div className="bdg" style={{ background:"#E8F5E9", color:"#2E7D32", marginBottom:10 }}>💰 {Number(p.commission||0)}% = ₹{Math.round(Number(p.price||0) * Number(p.commission||0) / 100)}</div>
                     <button className="bp" style={{ width:"100%", padding:"7px 0", fontSize:13 }} onClick={() => addToCart(p)}>+ Cart</button>
                   </div>
                 ))}
@@ -883,57 +883,81 @@ function RegisterPage({ onRegister, showToast, onSwitch, loading }) {
 // ══════════════════════════════════════════════════════════════
 function ProductModal({ product, onSave, onDelete, onClose, loading }) {
   const isEdit = !!product;
-  const [form, setForm]         = useState(product || { name:"", category:"", unit:"", price:"", commission:"", stock:"", emoji:"🛒", image:"" });
-  const [selEmoji, setSelEmoji] = useState(product?.emoji || "🛒");
+  const [form, setForm] = useState(product || { name:'', category:'', unit:'', price:'', commission:'', stock:'', emoji:'🛒', image:'' });
+  const [selEmoji, setSelEmoji] = useState(product?.emoji || '🛒');
+  const [imgPreview, setImgPreview] = useState(product?.image || '');
   const set = (k,v) => setForm(f => ({ ...f, [k]:v }));
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Photo 2MB se chhoti honi chahiye!'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => { setImgPreview(ev.target.result); set('image', ev.target.result); };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
-    if (!form.name || !form.category || !form.price || !form.commission) { alert("Naam, category, price aur commission zaroori hain!"); return; }
+    if (!form.name || !form.category || !form.price || !form.commission) { alert('Naam, category, price aur commission zaroori hain!'); return; }
     onSave({ ...form, emoji:selEmoji, price:Number(form.price), commission:Number(form.commission), stock:Number(form.stock)||0 });
   };
 
   return (
-    <div className="mb">
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
-        <h3 style={{ fontWeight:800, fontSize:18 }}>{isEdit?"✏️ Product Edit":"➕ Naya Product"}</h3>
-        <button onClick={onClose} style={{ background:"#F5F5F5", borderRadius:"50%", width:32, height:32, fontSize:18 }}>×</button>
+    <div className='mb'>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18 }}>
+        <h3 style={{ fontWeight:800, fontSize:18 }}>{isEdit?'✏️ Product Edit':'➕ Naya Product'}</h3>
+        <button onClick={onClose} style={{ background:'#F5F5F5', borderRadius:'50%', width:32, height:32, fontSize:18 }}>×</button>
       </div>
-      <label style={{ fontSize:12, fontWeight:600, color:"#666" }}>Emoji Chuno</label>
-      <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:6, marginBottom:14 }}>
+
+      <label style={{ fontSize:12, fontWeight:600, color:'#666' }}>📸 Product Photo</label>
+      <div style={{ marginTop:8, marginBottom:16 }}>
+        <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+          <div style={{ width:80, height:80, borderRadius:14, border:'2px dashed #F0E0C8', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', background:'#FFFDF7', flexShrink:0 }}>
+            {imgPreview ? <img src={imgPreview} style={{ width:80, height:80, objectFit:'cover' }} /> : <span style={{ fontSize:36 }}>{selEmoji}</span>}
+          </div>
+          <div style={{ flex:1 }}>
+            <label style={{ display:'block', background:'linear-gradient(135deg,#FF6B00,#FF8C00)', color:'white', padding:'10px 16px', borderRadius:12, fontWeight:700, fontSize:13, textAlign:'center', cursor:'pointer', marginBottom:8 }}>
+              📱 Gallery se Photo Chuno
+              <input type='file' accept='image/*' onChange={handleImageUpload} style={{ display:'none' }} />
+            </label>
+            {imgPreview && <button onClick={() => { setImgPreview(''); set('image',''); }} style={{ width:'100%', padding:'6px', borderRadius:10, background:'#FFF3E8', color:'#FF6B00', fontWeight:700, fontSize:12 }}>🗑️ Photo Hatao</button>}
+          </div>
+        </div>
+      </div>
+
+      <label style={{ fontSize:12, fontWeight:600, color:'#666' }}>Emoji Chuno (agar photo nahi hai)</label>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:6, marginBottom:14 }}>
         {ALL_EMOJIS.map(e => (
-          <button key={e} onClick={() => setSelEmoji(e)} style={{ width:40, height:40, borderRadius:10, background:selEmoji===e?"#FFF3E8":"#F9F9F9", border:selEmoji===e?"2px solid #FF6B00":"2px solid #F0E0C8", fontSize:20 }}>{e}</button>
+          <button key={e} onClick={() => setSelEmoji(e)} style={{ width:40, height:40, borderRadius:10, background:selEmoji===e?'#FFF3E8':'#F9F9F9', border:selEmoji===e?'2px solid #FF6B00':'2px solid #F0E0C8', fontSize:20 }}>{e}</button>
         ))}
       </div>
-      {[{label:"Product ka Naam *",key:"name",ph:"Jaise: Aata, Dal..."},{label:"Category *",key:"category",ph:"Jaise: Anaj, Dal, Tel..."},{label:"Unit",key:"unit",ph:"Jaise: 1 kg, 500 g, 1 L"}].map(({label,key,ph}) => (
+      {[{label:'Product ka Naam *',key:'name',ph:'Jaise: Aata, Dal...'},{label:'Category *',key:'category',ph:'Jaise: Anaj, Dal, Tel...'},{label:'Unit',key:'unit',ph:'Jaise: 1 kg, 500 g, 1 L'}].map(({label,key,ph}) => (
         <div key={key} style={{ marginBottom:12 }}>
-          <label style={{ fontSize:12, fontWeight:600, color:"#666" }}>{label}</label>
-          <input className="inf" placeholder={ph} value={form[key]||""} onChange={e => set(key,e.target.value)} style={{ marginTop:4 }} />
+          <label style={{ fontSize:12, fontWeight:600, color:'#666' }}>{label}</label>
+          <input className='inf' placeholder={ph} value={form[key]||''} onChange={e => set(key,e.target.value)} style={{ marginTop:4 }} />
         </div>
       ))}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:16 }}>
-        {[["💰 Price (₹) *","price","120"],["🎯 Commission % *","commission","10"],["📦 Stock","stock","50"]].map(([l,k,ph]) => (
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:16 }}>
+        {[['💰 Price (₹) *','price','120'],['🎯 Commission % *','commission','10'],['📦 Stock','stock','50']].map(([l,k,ph]) => (
           <div key={k}>
-            <label style={{ fontSize:12, fontWeight:600, color:"#666" }}>{l}</label>
-            <input className="inf" type="number" placeholder={ph} value={form[k]||""} onChange={e => set(k,e.target.value)} style={{ marginTop:4 }} />
+            <label style={{ fontSize:12, fontWeight:600, color:'#666' }}>{l}</label>
+            <input className='inf' type='number' placeholder={ph} value={form[k]||''} onChange={e => set(k,e.target.value)} style={{ marginTop:4 }} />
           </div>
         ))}
       </div>
-      {form.price && form.commission && (
-        <div style={{ background:"#E8F5E9", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:13, color:"#2E7D32", fontWeight:700 }}>
+      {form.price && form.commission && Number(form.commission) > 0 && (
+        <div style={{ background:'#E8F5E9', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#2E7D32', fontWeight:700 }}>
           💰 Har sale par commission: ₹{Math.round(Number(form.price)*Number(form.commission)/100)}
         </div>
       )}
-      <div style={{ display:"flex", gap:10 }}>
-        <button className="bp" style={{ flex:1, padding:12 }} onClick={handleSave} disabled={loading}>{loading?"⏳...":(isEdit?"✅ Update Karo":"✅ Add Karo")}</button>
-        {isEdit && <button className="br" style={{ padding:"12px 16px" }} onClick={() => onDelete(form.id)} disabled={loading}>🗑️</button>}
+      <div style={{ display:'flex', gap:10 }}>
+        <button className='bp' style={{ flex:1, padding:12 }} onClick={handleSave} disabled={loading}>{loading?'⏳...':(isEdit?'✅ Update Karo':'✅ Add Karo')}</button>
+        {isEdit && <button className='br' style={{ padding:'12px 16px' }} onClick={() => onDelete(form.id)} disabled={loading}>🗑️</button>}
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════
-// AD MODAL
-// ══════════════════════════════════════════════════════════════
 function AdModal({ ad, onSave, onDelete, onClose, loading }) {
   const isEdit = !!ad;
   const [form, setForm] = useState(ad ? { ...ad, bgFrom:ad.bg_from||ad.bgFrom||"#FF6B00", bgTo:ad.bg_to||ad.bgTo||"#FF8C42" } : { title:"", subtitle:"", bgFrom:"#FF6B00", bgTo:"#FF8C42", active:true, link:"" });
