@@ -21,7 +21,7 @@ const setToken = (t) => localStorage.setItem("kirana_token", t);
 const removeToken = () => localStorage.removeItem("kirana_token");
 
 // ─── Main App ──────────────────────────────────────────────────
-export default function App() {
+function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [products, setProducts]       = useState([]);
   const [orders, setOrders]           = useState([]);
