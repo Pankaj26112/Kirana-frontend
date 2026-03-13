@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Subhash Kirana Store - Order Karein</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #e8e8e8; display: flex; justify-content: center; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 0; height: 0; }
+    @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.04);} }
+    @keyframes fadein { from{opacity:0;} to{opacity:1;} }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { useState, useMemo, useEffect } = React;
+
+  const STORE_NAME     = "Subhash Kirana Store";
+  const WHATSAPP_NUMBER = "917206267615";
+  const DELIVERY_CHARGE = 20;
+  const MIN_DELIVERY   = 200;
+
+  // ── AD BANNERS — local businesses ke ads ──
+  const adBanners = [
+    { id:1, business:"Sharma Medical Store", tagline:"Dawai ghar pe mangao!",    offer:"📦 Free Home Delivery",       bg:"linear-gradient(135deg,#1a237e,#283593)", emoji:"💊", phone:"9876500001" },
+    { id:2, business:"Raju Dairy Fresh",     tagline:"Shudh Doodh, Roz Subah",   offer:"🥛 Pehle din FREE sample",    bg:"linear-gradient(135deg,#1b5e20,#2e7d32)", emoji:"🥛", phone:"9876500002" },
+    { id:3, business:"Quick Fix Electronics",tagline:"Mobile & TV Repair Expert", offer:"🔧 Ghar pe aake theek karein",bg:"linear-gradient(135deg,#bf360c,#d84315)", emoji:"📱", phone:"9876500003" },
+    { id:4, business:"Pinky Beauty Parlour", tagline:"Naye Look ke liye aao!",   offer:"💄 10% OFF — Pehli Visit",    bg:"linear-gradient(135deg,#880e4f,#ad1457)", emoji:"💄", phone:"9876500004" },
+  ];
+
+  const offers = [
+    { id:1, title:"🎉 Weekend Special!", desc:"Atta + Dal pe 5% OFF",        code:"WEEKEND5", discount:5,             type:"percent"  },
+    { id:2, title:"🚀 Pehli Delivery FREE!", desc:"₹500+ order pe delivery free", code:"FREESHIP", discount:DELIVERY_CHARGE, type:"delivery" },
+    { id:3, title:"💰 ₹20 OFF",          desc:"₹300+ order pe ₹20 ki chhoot", code:"SAVE20",   discount:20,            type:"flat"     },
+  ];
+
+  const categories = [
+    { id:"all",       label:"🛒 Sab"      },
+    { id:"featured",  label:"⭐ Popular"  },
+    { id:"atta-dal",  label:"🌾 Atta-Dal" },
+    { id:"masale",    label:"🌶️ Masale"  },
+    { id:"tel-ghee",  label:"🫙 Tel-Ghee" },
+    { id:"snacks",    label:"🍿 Snacks"   },
+    { id:"beverages", label:"☕ Drinks"   },
+    { id:"daily",     label:"🧴 Daily Use"},
+  ];
+
+  const products = [
+    { id:1,  name:"Aashirvaad Atta 5kg",      price:245, cat:"atta-dal",  emoji:"🌾", featured:true,  badge:"Bestseller" },
+    { id:2,  name:"Toor Dal 1kg",             price:145, cat:"atta-dal",  emoji:"🫘", featured:false },
+    { id:3,  name:"Chana Dal 1kg",            price:110, cat:"atta-dal",  emoji:"🫘", featured:false },
+    { id:4,  name:"Basmati Chawal 5kg",       price:380, cat:"atta-dal",  emoji:"🍚", featured:true,  badge:"Top Pick"   },
+    { id:5,  name:"MDH Garam Masala 100g",    price:85,  cat:"masale",    emoji:"🌶️",featured:true,  badge:"Popular"    },
+    { id:6,  name:"Haldi Powder 200g",        price:55,  cat:"masale",    emoji:"🟡", featured:false },
+    { id:7,  name:"Dhaniya Powder 200g",      price:45,  cat:"masale",    emoji:"🌿", featured:false },
+    { id:8,  name:"Lal Mirch Powder 100g",    price:60,  cat:"masale",    emoji:"🔴", featured:false },
+    { id:9,  name:"Fortune Sunflower Oil 1L", price:155, cat:"tel-ghee",  emoji:"🫙", featured:true,  badge:"Bestseller" },
+    { id:10, name:"Amul Ghee 500ml",          price:310, cat:"tel-ghee",  emoji:"🧈", featured:true,  badge:"Premium"    },
+    { id:11, name:"Dalda Vanaspati 1kg",      price:140, cat:"tel-ghee",  emoji:"🫙", featured:false },
+    { id:12, name:"Kurkure Masala Munch",     price:20,  cat:"snacks",    emoji:"🍿", featured:true,  badge:"Kids Fav"   },
+    { id:13, name:"Haldiram Aloo Bhujia 400g",price:110, cat:"snacks",    emoji:"🥜", featured:true,  badge:"Popular"    },
+    { id:14, name:"Parle-G Biscuit",          price:10,  cat:"snacks",    emoji:"🍪", featured:true,  badge:"Bestseller" },
+    { id:15, name:"Good Day Butter Cookies",  price:35,  cat:"snacks",    emoji:"🍪", featured:false },
+    { id:16, name:"Tata Tea Premium 250g",    price:130, cat:"beverages", emoji:"☕", featured:true,  badge:"Top Pick"   },
+    { id:17, name:"Nescafe Classic 50g",      price:195, cat:"beverages", emoji:"☕", featured:false },
+    { id:18, name:"Bournvita 500g",           price:265, cat:"beverages", emoji:"🥛", featured:false },
+    { id:19, name:"Surf Excel 1kg",           price:185, cat:"daily",     emoji:"🧴", featured:true,  badge:"Popular"    },
+    { id:20, name:"Vim Dishwash Bar",         price:45,  cat:"daily",     emoji:"🫧", featured:false },
+    { id:21, name:"Colgate Toothpaste 200g",  price:95,  cat:"daily",     emoji:"🦷", featured:false },
+    { id:22, name:"Dettol Soap",              price:55,  cat:"daily",     emoji:"🧼", featured:false },
+  ];
+
+  // ── AD BANNER COMPONENT ──
+  function AdBanner({ banners }) {
+    const [idx, setIdx] = useState(0);
+    useEffect(() => {
+      const t = setInterval(() => setIdx(i => (i + 1) % banners.length), 3500);
+      return () => clearInterval(t);
+    }, []);
+    const ad = banners[idx];
+    return (
+      <div style={{ margin:"10px 16px 0", position:"relative", overflow:"hidden", borderRadius:14, boxShadow:"0 4px 18px rgba(0,0,0,0.18)" }}>
+        <div key={idx} style={{ background:ad.bg, padding:"13px 16px", display:"flex", alignItems:"center", gap:14, animation:"fadein 0.5s ease" }}>
+          <div style={{ fontSize:36, flexShrink:0, background:"rgba(255,255,255,0.15)", borderRadius:12, width:56, height:56, display:"flex", alignItems:"center", justifyContent:"center" }}>{ad.emoji}</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:9, color:"rgba(255,255,255,0.7)", letterSpacing:2, textTransform:"uppercase", marginBottom:2 }}>Sponsored Ad</div>
+            <div style={{ color:"white", fontWeight:700, fontSize:15 }}>{ad.business}</div>
+            <div style={{ color:"rgba(255,255,255,0.85)", fontSize:12 }}>{ad.tagline}</div>
+            <div style={{ marginTop:6, background:"rgba(255,255,255,0.2)", display:"inline-block", padding:"4px 10px", borderRadius:20, color:"white", fontSize:11, fontWeight:600 }}>{ad.offer}</div>
+          </div>
+          <a href={"tel:+91"+ad.phone} style={{ background:"rgba(255,255,255,0.25)", border:"none", borderRadius:10, padding:"8px 10px", color:"white", fontWeight:700, fontSize:12, textDecoration:"none", flexShrink:0 }}>📞 Call</a>
+        </div>
+        {/* Dots */}
+        <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:5 }}>
+          {banners.map((_,i) => <div key={i} style={{ width: i===idx?18:6, height:6, borderRadius:3, background: i===idx?"white":"rgba(255,255,255,0.45)", transition:"all 0.3s" }} />)}
+        </div>
+      </div>
+    );
+  }
+
+  // ── INLINE AD (products ke beech mein) ──
+  function InlineAd({ ad }) {
+    return (
+      <div style={{ borderRadius:12, overflow:"hidden", marginBottom:10, boxShadow:"0 3px 12px rgba(0,0,0,0.12)" }}>
+        <div style={{ background:ad.bg, padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ fontSize:26 }}>{ad.emoji}</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:8, color:"rgba(255,255,255,0.65)", letterSpacing:2, textTransform:"uppercase" }}>Sponsored</div>
+            <div style={{ color:"white", fontWeight:700, fontSize:13 }}>{ad.business}</div>
+            <div style={{ color:"rgba(255,255,255,0.8)", fontSize:11 }}>{ad.offer}</div>
+          </div>
+          <a href={"tel:+91"+ad.phone} style={{ background:"rgba(255,255,255,0.25)", padding:"5px 10px", borderRadius:8, color:"white", fontSize:11, fontWeight:700, textDecoration:"none" }}>📞</a>
+        </div>
+      </div>
+    );
+  }
+
+  function App() {
+    const [cart, setCart]                 = useState({});
+    const [activeCat, setActiveCat]       = useState("all");
+    const [search, setSearch]             = useState("");
+    const [view, setView]                 = useState("shop");
+    const [deliveryType, setDeliveryType] = useState("delivery");
+    const [customerName, setCustomerName] = useState("");
+    const [customerAddr, setCustomerAddr] = useState("");
+    const [appliedOffer, setAppliedOffer] = useState(null);
+    const [offerMsg, setOfferMsg]         = useState("");
+    const [offerCode, setOfferCode]       = useState("");
+    const [ordered, setOrdered]           = useState(false);
+
+    const filtered = useMemo(() => products.filter(p => {
+      if (activeCat === "featured") return p.featured;
+      if (activeCat !== "all" && p.cat !== activeCat) return false;
+      return p.name.toLowerCase().includes(search.toLowerCase());
+    }), [activeCat, search]);
+
+    const cartItems   = Object.entries(cart).filter(([_,q]) => q > 0);
+    const totalItems  = cartItems.reduce((s,[_,q]) => s+q, 0);
+    const subTotal    = cartItems.reduce((s,[id,q]) => { const p=products.find(x=>x.id===+id); return s+(p?p.price*q:0); }, 0);
+    const deliveryCharge = deliveryType==="delivery" ? (appliedOffer?.type==="delivery" && subTotal>=500 ? 0 : subTotal>=MIN_DELIVERY ? DELIVERY_CHARGE : 0) : 0;
+    const discount = appliedOffer
+      ? appliedOffer.type==="percent" ? Math.round(subTotal*appliedOffer.discount/100)
+        : appliedOffer.type==="flat" && subTotal>=300 ? appliedOffer.discount : 0
+      : 0;
+    const totalPrice = subTotal + deliveryCharge - discount;
+
+    const addToCart    = id => setCart(c=>({...c,[id]:(c[id]||0)+1}));
+    const removeFromCart = id => setCart(c=>({...c,[id]:Math.max((c[id]||0)-1,0)}));
+
+    const applyOffer = () => {
+      const found = offers.find(o=>o.code===offerCode.toUpperCase().trim());
+      if (found) { setAppliedOffer(found); setOfferMsg("✅ Offer laga diya!"); }
+      else setOfferMsg("❌ Galat code hai, dobara try karo");
+    };
+
+    const sendWhatsApp = () => {
+      if (cartItems.length===0) return;
+      let msg = `🛒 *Naya Order — ${STORE_NAME}*\n`;
+      msg += `📋 Type: ${deliveryType==="delivery"?"🚚 Delivery":"🏪 Store Pickup"}\n\n`;
+      if (customerName) msg += `👤 Naam: ${customerName}\n`;
+      if (deliveryType==="delivery" && customerAddr) msg += `📍 Pata: ${customerAddr}\n`;
+      msg += `\n📦 *Items:*\n`;
+      cartItems.forEach(([id,qty])=>{ const p=products.find(x=>x.id===+id); if(p) msg+=`${p.emoji} ${p.name} × ${qty} = ₹${p.price*qty}\n`; });
+      msg += `\n💵 Subtotal: ₹${subTotal}`;
+      if (deliveryCharge>0) msg += `\n🚚 Delivery: ₹${deliveryCharge}`;
+      if (discount>0) msg += `\n🎉 Discount (${appliedOffer.code}): -₹${discount}`;
+      msg += `\n\n💰 *Kul Raqam: ₹${totalPrice}*\n\nKripya confirm karein! 🙏`;
+      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`,"_blank");
+      setOrdered(true);
+    };
+
+    const G = { green:"#2d5016", light:"#a8d87a", bg:"#fef9f0", wa:"#25D366" };
+
+    // Products with inline ads injected every 5 items
+    const productListWithAds = [];
+    filtered.forEach((p,i) => {
+      productListWithAds.push({ type:"product", data:p });
+      if ((i+1) % 5 === 0 && i !== filtered.length-1) {
+        const ad = adBanners[(Math.floor(i/5)) % adBanners.length];
+        productListWithAds.push({ type:"ad", data:ad });
+      }
+    });
+
+    return (
+      <div style={{ fontFamily:"'Trebuchet MS',sans-serif", background:G.bg, minHeight:"100vh", maxWidth:480, margin:"0 auto", boxShadow:"0 0 40px rgba(0,0,0,0.15)" }}>
+
+        {/* HEADER */}
+        <div style={{ background:`linear-gradient(135deg,${G.green},#3d6b1f)`, padding:"18px 16px 14px", position:"sticky", top:0, zIndex:100, boxShadow:"0 4px 20px rgba(45,80,22,0.4)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+            <div>
+              <div style={{ fontSize:10, color:G.light, letterSpacing:2, textTransform:"uppercase" }}>Aapka Bharosa</div>
+              <div style={{ color:"white", fontWeight:700, fontSize:19 }}>{STORE_NAME}</div>
+              <div style={{ color:"#c5e88a", fontSize:11, marginTop:2 }}>🕐 Subah 7 — Raat 10</div>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={()=>setView(view==="offers"?"shop":"offers")} style={{ background:view==="offers"?"#ff6b35":"rgba(255,255,255,0.2)", border:"none", borderRadius:10, padding:"8px 12px", cursor:"pointer", color:"white", fontWeight:700, fontSize:13 }}>🏷️</button>
+              <button onClick={()=>setView(view==="cart"?"shop":"cart")} style={{ background:view==="cart"?"#ff6b35":G.light, border:"none", borderRadius:10, padding:"8px 14px", cursor:"pointer", position:"relative", fontWeight:700, fontSize:13, color:view==="cart"?"white":G.green }}>
+                {view==="cart"?"← Wapas":"🛒 Cart"}
+                {totalItems>0 && view!=="cart" && <span style={{ background:"#ff4444", color:"white", borderRadius:"50%", width:18, height:18, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, position:"absolute", top:-7, right:-7 }}>{totalItems}</span>}
+              </button>
+            </div>
+          </div>
+          {view==="shop" && <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Koi cheez dhundho..." style={{ marginTop:12, width:"100%", padding:"9px 14px", borderRadius:10, border:"none", fontSize:14, background:"rgba(255,255,255,0.15)", color:"white", outline:"none", boxSizing:"border-box" }} />}
+        </div>
+
+        {/* OFFERS VIEW */}
+        {view==="offers" && (
+          <div style={{ padding:16, animation:"slideDown 0.3s ease" }}>
+            <div style={{ fontWeight:700, fontSize:18, color:G.green, marginBottom:14 }}>🏷️ Aaj ke Offers</div>
+            {offers.map(o=>(
+              <div key={o.id} style={{ background:"white", borderRadius:14, padding:16, marginBottom:12, border:"2px dashed #a8d87a", boxShadow:"0 4px 15px rgba(0,0,0,0.07)" }}>
+                <div style={{ fontWeight:700, fontSize:15, color:G.green }}>{o.title}</div>
+                <div style={{ color:"#666", fontSize:13, marginTop:4 }}>{o.desc}</div>
+                <div style={{ marginTop:10, display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ background:"#f0f7e8", border:"2px dashed #a8d87a", borderRadius:8, padding:"6px 14px", fontWeight:700, fontSize:14, color:G.green, letterSpacing:2 }}>{o.code}</div>
+                  <button onClick={()=>{ setView("cart"); setOfferCode(o.code); }} style={{ background:G.green, color:"white", border:"none", borderRadius:8, padding:"7px 14px", cursor:"pointer", fontWeight:600, fontSize:13 }}>Apply Karo</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* SHOP VIEW */}
+        {view==="shop" && (
+          <>
+            {/* Rotating Ad Banner */}
+            <AdBanner banners={adBanners} />
+
+            {/* Offer Banner */}
+            <div onClick={()=>setView("offers")} style={{ margin:"10px 16px 0", background:"linear-gradient(135deg,#ff6b35,#ff4444)", borderRadius:12, padding:"10px 14px", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <div style={{ color:"white", fontWeight:700, fontSize:13 }}>🏷️ {offers.length} Offers Available!</div>
+                <div style={{ color:"rgba(255,255,255,0.85)", fontSize:11 }}>Tap karke dekho — save karo</div>
+              </div>
+              <div style={{ color:"white", fontSize:20 }}>→</div>
+            </div>
+
+            {/* Categories */}
+            <div style={{ padding:"10px 16px", overflowX:"auto", display:"flex", gap:8 }}>
+              {categories.map(cat=>(
+                <button key={cat.id} onClick={()=>setActiveCat(cat.id)} style={{ flexShrink:0, padding:"7px 14px", borderRadius:20, border:"2px solid", borderColor:activeCat===cat.id?G.green:"#e0d5c0", background:activeCat===cat.id?G.green:"white", color:activeCat===cat.id?"white":"#555", fontWeight:600, fontSize:12, cursor:"pointer" }}>{cat.label}</button>
+              ))}
+            </div>
+
+            {/* Products + Inline Ads */}
+            <div style={{ padding:"0 16px 130px" }}>
+              <div style={{ fontSize:12, color:"#999", marginBottom:8 }}>{filtered.length} items</div>
+              {productListWithAds.map((item, idx) => {
+                if (item.type==="ad") return <InlineAd key={"ad-"+idx} ad={item.data} />;
+                const p = item.data;
+                return (
+                  <div key={p.id} style={{ background:"white", borderRadius:14, padding:"13px 14px", marginBottom:9, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 2px 10px rgba(0,0,0,0.06)", border:cart[p.id]>0?`2px solid ${G.light}`:"2px solid transparent" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12, flex:1 }}>
+                      <div style={{ width:48, height:48, borderRadius:12, background:"#f5f0e8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>{p.emoji}</div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          <div style={{ fontWeight:600, fontSize:14, color:"#2a2a2a" }}>{p.name}</div>
+                          {p.badge && <span style={{ background:"#fff3e0", color:"#e65100", fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:20 }}>{p.badge}</span>}
+                        </div>
+                        <div style={{ fontSize:16, fontWeight:700, color:G.green, marginTop:2 }}>₹{p.price}</div>
+                      </div>
+                    </div>
+                    {cart[p.id]>0 ? (
+                      <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                        <button onClick={()=>removeFromCart(p.id)} style={{ width:30, height:30, borderRadius:8, background:"#fee2e2", border:"none", cursor:"pointer", fontSize:18, color:"#cc3333", fontWeight:700 }}>−</button>
+                        <span style={{ fontWeight:700, fontSize:16, minWidth:22, textAlign:"center" }}>{cart[p.id]}</span>
+                        <button onClick={()=>addToCart(p.id)} style={{ width:30, height:30, borderRadius:8, background:G.green, border:"none", cursor:"pointer", fontSize:18, color:"white", fontWeight:700 }}>+</button>
+                      </div>
+                    ) : (
+                      <button onClick={()=>addToCart(p.id)} style={{ background:G.green, color:"white", border:"none", borderRadius:10, padding:"8px 16px", cursor:"pointer", fontWeight:600, fontSize:13, flexShrink:0 }}>+ Add</button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* CART VIEW */}
+        {view==="cart" && (
+          <div style={{ padding:"16px 16px 140px" }}>
+            <div style={{ fontWeight:700, fontSize:18, color:G.green, marginBottom:14 }}>🛒 Aapka Cart</div>
+            {cartItems.length===0 ? (
+              <div style={{ textAlign:"center", padding:50, color:"#aaa" }}>
+                <div style={{ fontSize:52 }}>🛒</div>
+                <div style={{ marginTop:10, fontSize:15 }}>Cart khaali hai!</div>
+                <button onClick={()=>setView("shop")} style={{ marginTop:16, background:G.green, color:"white", border:"none", borderRadius:10, padding:"10px 22px", cursor:"pointer", fontWeight:600 }}>Products Dekhein</button>
+              </div>
+            ) : (
+              <>
+                {/* Delivery/Pickup */}
+                <div style={{ background:"white", borderRadius:14, padding:14, marginBottom:12, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" }}>
+                  <div style={{ fontWeight:600, marginBottom:10, color:"#333" }}>🚚 Delivery ya Pickup?</div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    {[["delivery","🚚 Delivery"],["pickup","🏪 Store Pickup"]].map(([val,label])=>(
+                      <button key={val} onClick={()=>setDeliveryType(val)} style={{ flex:1, padding:"9px 0", borderRadius:10, border:`2px solid ${deliveryType===val?G.green:"#e0d5c0"}`, background:deliveryType===val?G.green:"white", color:deliveryType===val?"white":"#555", fontWeight:600, fontSize:13, cursor:"pointer" }}>{label}</button>
+                    ))}
+                  </div>
+                  {deliveryType==="delivery" && subTotal<MIN_DELIVERY && subTotal>0 && (
+                    <div style={{ marginTop:8, fontSize:12, color:"#e65100", background:"#fff3e0", padding:"6px 10px", borderRadius:8 }}>⚠️ ₹{MIN_DELIVERY-subTotal} aur add karo — delivery charge lagega ₹{DELIVERY_CHARGE}</div>
+                  )}
+                </div>
+
+                {/* Cart Items */}
+                {cartItems.map(([id,qty])=>{ const p=products.find(x=>x.id===+id); if(!p) return null; return (
+                  <div key={id} style={{ background:"white", borderRadius:12, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"space-between", boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, flex:1 }}>
+                      <span style={{ fontSize:24 }}>{p.emoji}</span>
+                      <div><div style={{ fontWeight:600, fontSize:13 }}>{p.name}</div><div style={{ fontSize:12, color:"#888" }}>₹{p.price} × {qty}</div></div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                      <button onClick={()=>removeFromCart(+id)} style={{ width:26, height:26, borderRadius:6, background:"#fee2e2", border:"none", cursor:"pointer", color:"#cc3333", fontWeight:700 }}>−</button>
+                      <span style={{ fontWeight:700, minWidth:18, textAlign:"center" }}>{qty}</span>
+                      <button onClick={()=>addToCart(+id)} style={{ width:26, height:26, borderRadius:6, background:"#e8f5d0", border:"none", cursor:"pointer", color:G.green, fontWeight:700 }}>+</button>
+                      <span style={{ fontWeight:700, color:G.green, minWidth:55, textAlign:"right", fontSize:14 }}>₹{p.price*qty}</span>
+                    </div>
+                  </div>
+                ); })}
+
+                {/* Offer Code */}
+                <div style={{ background:"white", borderRadius:12, padding:14, marginTop:10, boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <div style={{ fontWeight:600, marginBottom:8, color:"#333" }}>🏷️ Offer Code</div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <input value={offerCode} onChange={e=>{setOfferCode(e.target.value);setOfferMsg("");}} placeholder="Code daalo (e.g. SAVE20)" style={{ flex:1, padding:"9px 12px", borderRadius:8, border:"1px solid #e0d5c0", fontSize:13, outline:"none", textTransform:"uppercase" }} />
+                    <button onClick={applyOffer} style={{ background:G.green, color:"white", border:"none", borderRadius:8, padding:"9px 14px", cursor:"pointer", fontWeight:600, fontSize:13 }}>Apply</button>
+                  </div>
+                  {offerMsg && <div style={{ marginTop:7, fontSize:13, color:offerMsg.startsWith("✅")?"#2d7a2d":"#cc3333" }}>{offerMsg}</div>}
+                  <div style={{ marginTop:8, fontSize:11, color:"#999" }}>💡 Offers dekhne ke liye 🏷️ button dabao</div>
+                </div>
+
+                {/* Customer Info */}
+                <div style={{ background:"white", borderRadius:12, padding:14, marginTop:10, boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <div style={{ fontWeight:600, marginBottom:10, color:"#333" }}>📋 Aapki Info</div>
+                  <input value={customerName} onChange={e=>setCustomerName(e.target.value)} placeholder="Naam (zaroori hai)" style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e0d5c0", fontSize:14, boxSizing:"border-box", marginBottom:8, outline:"none" }} />
+                  {deliveryType==="delivery" && <input value={customerAddr} onChange={e=>setCustomerAddr(e.target.value)} placeholder="Ghar ka pata / mohalla" style={{ width:"100%", padding:"9px 12px", borderRadius:8, border:"1px solid #e0d5c0", fontSize:14, boxSizing:"border-box", outline:"none" }} />}
+                </div>
+
+                {/* Bill Summary */}
+                <div style={{ background:G.green, borderRadius:14, padding:16, marginTop:12, color:"white" }}>
+                  <div style={{ fontSize:13, opacity:0.8, marginBottom:6 }}>Bill Summary</div>
+                  <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}><span>Subtotal ({totalItems} items)</span><span>₹{subTotal}</span></div>
+                  {deliveryType==="delivery" && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4 }}><span>Delivery</span><span>{deliveryCharge===0?"🎉 FREE":`₹${deliveryCharge}`}</span></div>}
+                  {discount>0 && <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:4, color:G.light }}><span>Discount ({appliedOffer.code})</span><span>− ₹{discount}</span></div>}
+                  <div style={{ borderTop:"1px solid rgba(255,255,255,0.2)", marginTop:8, paddingTop:10, display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontWeight:700, fontSize:15 }}>Kul Raqam</span>
+                    <span style={{ fontWeight:700, fontSize:22 }}>₹{totalPrice}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* BOTTOM BUTTON */}
+        {cartItems.length>0 && (
+          <div style={{ position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:480, padding:"12px 16px", background:"linear-gradient(to top,white 75%,transparent)", boxSizing:"border-box", zIndex:200 }}>
+            {view==="shop" ? (
+              <button onClick={()=>setView("cart")} style={{ width:"100%", background:G.green, color:"white", border:"none", borderRadius:14, padding:15, fontSize:15, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 20px rgba(45,80,22,0.35)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span>🛒 Cart Dekhein</span>
+                <span style={{ background:"rgba(255,255,255,0.2)", padding:"4px 12px", borderRadius:20 }}>{totalItems} items • ₹{subTotal}</span>
+              </button>
+            ) : view==="cart" && cartItems.length>0 ? (
+              ordered ? (
+                <div style={{ background:"white", borderRadius:14, padding:16, boxShadow:"0 4px 20px rgba(0,0,0,0.12)" }}>
+                  <div style={{ background:G.wa, borderRadius:10, padding:"12px 14px", textAlign:"center", fontWeight:700, fontSize:14, color:"white", marginBottom:10 }}>✅ WhatsApp khul raha hai — order bhej do! 🙏</div>
+                  <div style={{ background:"#f0f7e8", border:"2px dashed #a8d87a", borderRadius:10, padding:"12px 14px", textAlign:"center" }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:G.green, marginBottom:4 }}>📱 Hamara Number Save Karo!</div>
+                    <div style={{ fontSize:22, fontWeight:700, color:"#333", letterSpacing:1 }}>+91 72062 67615</div>
+                    <div style={{ fontSize:11, color:"#666", marginTop:4 }}>Subhash Kirana Store ke naam se save karo<br/>Aur seedha WhatsApp pe order karo! 🛒</div>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={sendWhatsApp} style={{ width:"100%", background:`linear-gradient(135deg,${G.wa},#128C7E)`, color:"white", border:"none", borderRadius:14, padding:15, fontSize:15, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 20px rgba(37,211,102,0.4)", display:"flex", justifyContent:"center", alignItems:"center", gap:10 }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.12 1.527 5.855L0 24l6.335-1.508A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.851 0-3.587-.5-5.089-1.373l-.361-.214-3.762.895.936-3.659-.237-.378A9.966 9.966 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                  WhatsApp pe Order — ₹{totalPrice}
+                </button>
+              )
+            ) : null}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
