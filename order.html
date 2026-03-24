@@ -14,6 +14,7 @@
     @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
     @keyframes popIn{from{opacity:0;transform:scale(0.85);}to{opacity:1;transform:scale(1);}}
     @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+    @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
   </style>
 </head>
 <body>
@@ -21,77 +22,98 @@
 <script type="text/babel">
 const { useState, useEffect, useMemo } = React;
 
-const STORE_NAME       = "Subhash Kirana Store";
-const WHATSAPP_NUMBER  = "917206267615";
-const ADMIN_PASSWORD   = "subhash123";
-const DELIVERY_CHARGE  = 20;
-const MIN_DELIVERY     = 200;
+// ════════════════════════════════════════════
+// ⚙️  SETUP — Yahan apni settings daalo
+// ════════════════════════════════════════════
+const STORE_NAME      = "Subhash Kirana Store";
+const WHATSAPP_NUMBER = "917206267615";
+const ADMIN_PASSWORD  = "subhash123";
+const DELIVERY_CHARGE = 20;
+const MIN_DELIVERY    = 200;
 
-// variants: [{unit:"500g", price:65}, {unit:"1kg", price:120}]
-// if variants present, price field is ignored
-const DEFAULT_PRODUCTS = [
-  {id:1,  name:"Aashirvaad Atta",       price:245, cat:"atta-dal",  emoji:"🌾", img:"", featured:true,  badge:"Bestseller", orderLimit:0, specialPrice:null,
-    variants:[{unit:"5kg",price:245},{unit:"10kg",price:470}]},
-  {id:2,  name:"Toor Dal",              price:145, cat:"atta-dal",  emoji:"🫘", img:"", featured:false, badge:"",           orderLimit:0, specialPrice:null,
-    variants:[{unit:"500g",price:75},{unit:"1kg",price:145}]},
-  {id:3,  name:"Basmati Chawal",        price:380, cat:"atta-dal",  emoji:"🍚", img:"", featured:true,  badge:"Top Pick",   orderLimit:0, specialPrice:null,
-    variants:[{unit:"1kg",price:90},{unit:"5kg",price:380}]},
-  {id:4,  name:"MDH Garam Masala",      price:85,  cat:"masale",    emoji:"🌶️",img:"", featured:true,  badge:"Popular",    orderLimit:0, specialPrice:null,
-    variants:[{unit:"50g",price:45},{unit:"100g",price:85}]},
-  {id:5,  name:"Haldi Powder",          price:55,  cat:"masale",    emoji:"🟡", img:"", featured:false, badge:"",           orderLimit:0, specialPrice:null,
-    variants:[{unit:"100g",price:30},{unit:"200g",price:55}]},
-  {id:6,  name:"Fortune Sunflower Oil", price:155, cat:"tel-ghee",  emoji:"🫙", img:"", featured:true,  badge:"Bestseller", orderLimit:0, specialPrice:null,
-    variants:[{unit:"500ml",price:80},{unit:"1L",price:155},{unit:"2L",price:295}]},
-  {id:7,  name:"Amul Ghee",             price:310, cat:"tel-ghee",  emoji:"🧈", img:"", featured:true,  badge:"Premium",    orderLimit:0, specialPrice:null,
-    variants:[{unit:"200ml",price:140},{unit:"500ml",price:310}]},
-  {id:8,  name:"Tata Tea Premium",      price:130, cat:"beverages", emoji:"☕", img:"", featured:true,  badge:"Top Pick",   orderLimit:0, specialPrice:null,
-    variants:[{unit:"250g",price:130},{unit:"500g",price:250}]},
-  {id:9,  name:"Parle-G Biscuit",       price:10,  cat:"snacks",    emoji:"🍪", img:"", featured:true,  badge:"Bestseller", orderLimit:0, specialPrice:null,
-    variants:[]},
-  {id:10, name:"Kurkure",               price:20,  cat:"snacks",    emoji:"🍿", img:"", featured:true,  badge:"Kids Fav",   orderLimit:5, specialPrice:null,
-    variants:[]},
-  {id:11, name:"Surf Excel",            price:185, cat:"daily",     emoji:"🧴", img:"", featured:true,  badge:"Popular",    orderLimit:0, specialPrice:null,
-    variants:[{unit:"500g",price:100},{unit:"1kg",price:185}]},
-  {id:12, name:"Chini",                 price:46,  cat:"atta-dal",  emoji:"🍬", img:"", featured:false, badge:"Special Offer", orderLimit:2, specialPrice:{minOrderAmt:600,price:1},
-    variants:[{unit:"500g",price:23},{unit:"1kg",price:46}]},
-];
+// JSONBin.io config — FREE cloud database
+// Step 1: jsonbin.io pe free account banao
+// Step 2: New Bin banao — default data neeche se copy karo
+// Step 3: Bin ID aur API Key yahan daalo
+const JSONBIN_ID  = "YAHAN_BIN_ID_DAALO";   // e.g. "65abc123def456"
+const JSONBIN_KEY = "YAHAN_API_KEY_DAALO";   // e.g. "$2a$10$..."
+// ════════════════════════════════════════════
 
-const DEFAULT_ADS = [
-  {id:1,business:"Sharma Medical Store",tagline:"Dawai ghar pe mangao!",offer:"📦 Free Home Delivery",bg:"linear-gradient(135deg,#1a237e,#283593)",emoji:"💊",phone:"9876500001"},
-  {id:2,business:"Raju Dairy Fresh",tagline:"Shudh Doodh, Roz Subah",offer:"🥛 Pehle din FREE sample",bg:"linear-gradient(135deg,#1b5e20,#2e7d32)",emoji:"🥛",phone:"9876500002"},
-];
+const DEFAULT_DATA = {
+  products: [
+    {id:1,  name:"Aashirvaad Atta",       price:245, cat:"atta-dal",  emoji:"🌾", img:"", featured:true,  badge:"Bestseller", orderLimit:0, specialPrice:null, variants:[{unit:"5kg",price:245},{unit:"10kg",price:470}]},
+    {id:2,  name:"Toor Dal",              price:145, cat:"atta-dal",  emoji:"🫘", img:"", featured:false, badge:"",           orderLimit:0, specialPrice:null, variants:[{unit:"500g",price:75},{unit:"1kg",price:145}]},
+    {id:3,  name:"Basmati Chawal",        price:380, cat:"atta-dal",  emoji:"🍚", img:"", featured:true,  badge:"Top Pick",   orderLimit:0, specialPrice:null, variants:[{unit:"1kg",price:90},{unit:"5kg",price:380}]},
+    {id:4,  name:"MDH Garam Masala",      price:85,  cat:"masale",    emoji:"🌶️",img:"", featured:true,  badge:"Popular",    orderLimit:0, specialPrice:null, variants:[{unit:"50g",price:45},{unit:"100g",price:85}]},
+    {id:5,  name:"Haldi Powder",          price:55,  cat:"masale",    emoji:"🟡", img:"", featured:false, badge:"",           orderLimit:0, specialPrice:null, variants:[{unit:"100g",price:30},{unit:"200g",price:55}]},
+    {id:6,  name:"Fortune Sunflower Oil", price:155, cat:"tel-ghee",  emoji:"🫙", img:"", featured:true,  badge:"Bestseller", orderLimit:0, specialPrice:null, variants:[{unit:"500ml",price:80},{unit:"1L",price:155},{unit:"2L",price:295}]},
+    {id:7,  name:"Amul Ghee",             price:310, cat:"tel-ghee",  emoji:"🧈", img:"", featured:true,  badge:"Premium",    orderLimit:0, specialPrice:null, variants:[{unit:"200ml",price:140},{unit:"500ml",price:310}]},
+    {id:8,  name:"Tata Tea Premium",      price:130, cat:"beverages", emoji:"☕", img:"", featured:true,  badge:"Top Pick",   orderLimit:0, specialPrice:null, variants:[{unit:"250g",price:130},{unit:"500g",price:250}]},
+    {id:9,  name:"Parle-G Biscuit",       price:10,  cat:"snacks",    emoji:"🍪", img:"", featured:true,  badge:"Bestseller", orderLimit:0, specialPrice:null, variants:[]},
+    {id:10, name:"Kurkure",               price:20,  cat:"snacks",    emoji:"🍿", img:"", featured:true,  badge:"Kids Fav",   orderLimit:5, specialPrice:null, variants:[]},
+    {id:11, name:"Surf Excel",            price:185, cat:"daily",     emoji:"🧴", img:"", featured:true,  badge:"Popular",    orderLimit:0, specialPrice:null, variants:[{unit:"500g",price:100},{unit:"1kg",price:185}]},
+    {id:12, name:"Chini",                 price:46,  cat:"atta-dal",  emoji:"🍬", img:"", featured:false, badge:"Special Offer", orderLimit:2, specialPrice:{minOrderAmt:600,price:1}, variants:[{unit:"500g",price:23},{unit:"1kg",price:46}]},
+  ],
+  ads: [
+    {id:1, business:"Sharma Medical Store", tagline:"Dawai ghar pe mangao!",  offer:"📦 Free Home Delivery",    bg:"linear-gradient(135deg,#1a237e,#283593)", emoji:"💊", phone:"9876500001"},
+    {id:2, business:"Raju Dairy Fresh",     tagline:"Shudh Doodh, Roz Subah", offer:"🥛 Pehle din FREE sample", bg:"linear-gradient(135deg,#1b5e20,#2e7d32)", emoji:"🥛", phone:"9876500002"},
+  ]
+};
 
 const CATEGORIES=[
   {id:"atta-dal",label:"🌾 Atta-Dal"},{id:"masale",label:"🌶️ Masale"},
   {id:"tel-ghee",label:"🫙 Tel-Ghee"},{id:"snacks",label:"🍿 Snacks"},
   {id:"beverages",label:"☕ Drinks"},{id:"daily",label:"🧴 Daily Use"},
 ];
-const EMOJIS=["🌾","🫘","🍚","🌶️","🟡","🌿","🔴","🫙","🧈","🍿","🥜","🍪","☕","🥛","🧴","🫧","🦷","🧼","🧅","🧄","🥦","🍅","🍋","🥚","🧃","🥤","🍫","🍬","🍭","💊","🛒"];
+const EMOJIS=["🌾","🫘","🍚","🌶️","🟡","🌿","🔴","🫙","🧈","🍿","🥜","🍪","☕","🥛","🧴","🫧","🦷","🧼","🧅","🧄","🥚","🧃","🥤","🍫","🍬","💊","🛒"];
 const BG_OPTIONS=[
   {label:"Blue",val:"linear-gradient(135deg,#1a237e,#283593)"},{label:"Green",val:"linear-gradient(135deg,#1b5e20,#2e7d32)"},
   {label:"Red",val:"linear-gradient(135deg,#b71c1c,#c62828)"},{label:"Orange",val:"linear-gradient(135deg,#e65100,#f57c00)"},
   {label:"Purple",val:"linear-gradient(135deg,#4a148c,#6a1b9a)"},{label:"Pink",val:"linear-gradient(135deg,#880e4f,#ad1457)"},
 ];
 const G={green:"#2d5016",light:"#a8d87a",bg:"#fef9f0",wa:"#25D366",red:"#e53935"};
-const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}};
-const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
 
-function effectivePrice(p,otherSubtotal,variantPrice){
-  const base=variantPrice!=null?variantPrice:p.price;
-  if(p.specialPrice&&otherSubtotal>=p.specialPrice.minOrderAmt) return p.specialPrice.price;
+// ── JSONBIN API ──
+const isConfigured = () => JSONBIN_ID !== "YAHAN_BIN_ID_DAALO" && JSONBIN_KEY !== "YAHAN_API_KEY_DAALO";
+
+const fetchData = async () => {
+  if (!isConfigured()) return DEFAULT_DATA;
+  try {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+      headers: {"X-Master-Key": JSONBIN_KEY}
+    });
+    const j = await r.json();
+    return j.record || DEFAULT_DATA;
+  } catch { return DEFAULT_DATA; }
+};
+
+const pushData = async (data) => {
+  if (!isConfigured()) return false;
+  try {
+    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+      method: "PUT",
+      headers: {"Content-Type":"application/json","X-Master-Key":JSONBIN_KEY},
+      body: JSON.stringify(data)
+    });
+    return true;
+  } catch { return false; }
+};
+
+// ── HELPERS ──
+function effectivePrice(p, otherSub, variantPrice) {
+  const base = variantPrice != null ? variantPrice : p.price;
+  if (p.specialPrice && otherSub >= p.specialPrice.minOrderAmt) return p.specialPrice.price;
   return base;
 }
 
-// ── PRODUCT IMAGE ──
-function ProductImg({img,emoji,size=48}){
-  const [err,setErr]=useState(false);
-  if(img&&!err) return <img src={img} onError={()=>setErr(true)} style={{width:size,height:size,borderRadius:12,objectFit:"cover",flexShrink:0}} alt=""/>;
+function ProductImg({img, emoji, size=48}) {
+  const [err, setErr] = useState(false);
+  if (img && !err) return <img src={img} onError={()=>setErr(true)} style={{width:size,height:size,borderRadius:12,objectFit:"cover",flexShrink:0}} alt=""/>;
   return <div style={{width:size,height:size,borderRadius:12,background:"#f5f0e8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.55,flexShrink:0}}>{emoji}</div>;
 }
 
-// ── VARIANT SELECTOR ──
-function VariantSelector({variants,selected,onChange}){
-  if(!variants||variants.length===0) return null;
+function VariantSelector({variants, selected, onChange}) {
+  if (!variants || variants.length === 0) return null;
   return(
     <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:5}}>
       {variants.map((v,i)=>(
@@ -103,12 +125,16 @@ function VariantSelector({variants,selected,onChange}){
   );
 }
 
+function Spinner() {
+  return <div style={{width:32,height:32,border:`4px solid ${G.light}`,borderTopColor:G.green,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}></div>;
+}
+
 // ── AD BANNER ──
-function AdBanner({ads}){
-  const [idx,setIdx]=useState(0);
+function AdBanner({ads}) {
+  const [idx, setIdx] = useState(0);
   useEffect(()=>{if(ads.length<2)return;const t=setInterval(()=>setIdx(i=>(i+1)%ads.length),3500);return()=>clearInterval(t);},[ads.length]);
   if(!ads.length) return null;
-  const ad=ads[idx%ads.length];
+  const ad = ads[idx % ads.length];
   return(
     <div style={{margin:"10px 16px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 4px 18px rgba(0,0,0,0.18)"}}>
       <div style={{background:ad.bg,padding:"13px 16px",display:"flex",alignItems:"center",gap:12}}>
@@ -127,12 +153,12 @@ function AdBanner({ads}){
 }
 
 // ── ORDER CONFIRMED ──
-function OrderConfirmed({onBack}){
+function OrderConfirmed({onBack}) {
   return(
     <div style={{minHeight:"100vh",background:G.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center",animation:"popIn 0.4s ease"}}>
       <div style={{fontSize:80,marginBottom:20,animation:"bounce 1s ease infinite"}}>🎉</div>
       <div style={{fontWeight:800,fontSize:24,color:G.green,marginBottom:8}}>Order Ho Gayi!</div>
-      <div style={{fontSize:15,color:"#555",marginBottom:24,lineHeight:1.6}}>WhatsApp pe order bhej diya gaya hai.<br/>Hum jald hi confirm karenge! 😊</div>
+      <div style={{fontSize:15,color:"#555",marginBottom:24,lineHeight:1.6}}>WhatsApp pe order bhej diya gaya!<br/>Hum jald hi confirm karenge 😊</div>
       <div style={{background:"white",borderRadius:16,padding:20,width:"100%",maxWidth:340,boxShadow:"0 8px 30px rgba(45,80,22,0.15)",border:`2px dashed ${G.light}`,marginBottom:16}}>
         <div style={{fontSize:28,marginBottom:8}}>📱</div>
         <div style={{fontWeight:700,fontSize:16,color:G.green,marginBottom:4}}>Hamara Number Save Karo!</div>
@@ -140,94 +166,62 @@ function OrderConfirmed({onBack}){
         <div style={{fontSize:12,color:"#777",marginBottom:12}}><b>"{STORE_NAME}"</b> naam se save karo<br/>Agli baar seedha WhatsApp pe order karo! 🛒</div>
         <a href="https://wa.me/917206267615" target="_blank" style={{display:"block",background:`linear-gradient(135deg,${G.wa},#128C7E)`,color:"white",borderRadius:10,padding:"10px",fontWeight:700,fontSize:14,textDecoration:"none"}}>💬 WhatsApp pe Add Karo</a>
       </div>
-      <div style={{background:"#fff3e0",borderRadius:12,padding:"12px 16px",width:"100%",maxWidth:340,marginBottom:20,border:"1.5px solid #ffcc80"}}>
-        <div style={{fontWeight:700,color:"#e65100",fontSize:13}}>🏷️ Yaad raho!</div>
-        <div style={{fontSize:12,color:"#bf360c",marginTop:4}}>₹600+ ki order pe kuch products pe special prices milte hain!</div>
-      </div>
       <button onClick={onBack} style={{background:G.green,color:"white",border:"none",borderRadius:12,padding:"13px 32px",fontWeight:700,fontSize:15,cursor:"pointer"}}>🛍️ Phir Se Order Karo</button>
     </div>
   );
 }
 
-// ── PRODUCT FORM (Admin) ──
-function ProductForm({p,onSave,onCancel}){
+// ── PRODUCT FORM ──
+function ProductForm({p, onSave, onCancel}) {
   const blank={emoji:"🛒",cat:"atta-dal",featured:false,badge:"",orderLimit:0,specialPrice:null,img:"",variants:[]};
-  const [form,setForm]=useState({...blank,...p});
-  const [hasSpecial,setHasSpecial]=useState(!!p.specialPrice);
-  const [sp,setSp]=useState(p.specialPrice||{minOrderAmt:600,price:1});
-  const [variants,setVariants]=useState(p.variants||[]);
+  const [form, setForm]=useState({...blank,...p});
+  const [hasSpecial, setHasSpecial]=useState(!!p.specialPrice);
+  const [sp, setSp]=useState(p.specialPrice||{minOrderAmt:600,price:1});
+  const [variants, setVariants]=useState(p.variants||[]);
   const set=k=>v=>setForm(f=>({...f,[k]:v}));
-
-  const addVariant=()=>setVariants(v=>[...v,{unit:"",price:0}]);
-  const updateVariant=(i,k,v)=>setVariants(vs=>vs.map((x,j)=>j===i?{...x,[k]:v}:x));
-  const removeVariant=i=>setVariants(vs=>vs.filter((_,j)=>j!==i));
-
-  const handleSave=()=>{
-    const final={...form,orderLimit:+form.orderLimit||0,variants,specialPrice:hasSpecial?{minOrderAmt:+sp.minOrderAmt,price:+sp.price}:null};
-    onSave(final);
-  };
-
+  const addV=()=>setVariants(v=>[...v,{unit:"",price:0}]);
+  const updV=(i,k,v)=>setVariants(vs=>vs.map((x,j)=>j===i?{...x,[k]:v}:x));
+  const delV=i=>setVariants(vs=>vs.filter((_,j)=>j!==i));
+  const handleSave=()=>onSave({...form,orderLimit:+form.orderLimit||0,variants,specialPrice:hasSpecial?{minOrderAmt:+sp.minOrderAmt,price:+sp.price}:null});
   const inp=(val,onChange,ph,type="text")=>(
     <input type={type} value={val||""} onChange={e=>onChange(e.target.value)} placeholder={ph}
       style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #e0d5c0",fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:8,background:"white"}}/>
   );
-
   return(
     <div style={{background:"white",borderRadius:14,padding:16,marginBottom:14,boxShadow:"0 4px 20px rgba(0,0,0,0.1)"}}>
-      <div style={{fontWeight:700,fontSize:16,color:G.green,marginBottom:12}}>{form.id?"✏️ Edit Product":"➕ Naya Product"}</div>
-
+      <div style={{fontWeight:700,fontSize:16,color:G.green,marginBottom:12}}>{form.id?"✏️ Edit":"➕ Naya Product"}</div>
       {inp(form.name,set("name"),"Product naam")}
       {inp(form.price,v=>set("price")(+v),"Normal price (₹)","number")}
-
-      {/* Image URL */}
       <div style={{marginBottom:8}}>
-        <div style={{fontSize:12,color:"#888",marginBottom:4}}>📸 Product Image URL (optional)</div>
-        <input value={form.img||""} onChange={e=>set("img")(e.target.value)} placeholder="https://... image ka link paste karo"
+        <div style={{fontSize:12,color:"#888",marginBottom:4}}>📸 Image URL (optional)</div>
+        <input value={form.img||""} onChange={e=>set("img")(e.target.value)} placeholder="https://... image link"
           style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #e0d5c0",fontSize:13,outline:"none",boxSizing:"border-box",background:"white"}}/>
-        {form.img&&<div style={{marginTop:6,display:"flex",alignItems:"center",gap:8}}>
-          <img src={form.img} style={{width:50,height:50,borderRadius:8,objectFit:"cover",border:"2px solid #e0d5c0"}} onError={e=>e.target.style.display="none"} alt=""/>
-          <span style={{fontSize:11,color:"#888"}}>Preview</span>
-        </div>}
-        <div style={{fontSize:11,color:"#aaa",marginTop:4}}>💡 Google Images pe product dhundho → image pe right click → "Copy image address"</div>
+        {form.img&&<img src={form.img} style={{width:50,height:50,borderRadius:8,objectFit:"cover",marginTop:6,border:"2px solid #e0d5c0"}} onError={e=>e.target.style.display="none"} alt=""/>}
+        <div style={{fontSize:11,color:"#aaa",marginTop:4}}>💡 Google Images → image → long press → Copy image address</div>
       </div>
-
       <select value={form.cat} onChange={e=>set("cat")(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #e0d5c0",fontSize:14,outline:"none",marginBottom:8,background:"white"}}>
         {CATEGORIES.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
       </select>
-
       <div style={{marginBottom:8}}>
         <div style={{fontSize:12,color:"#888",marginBottom:5}}>Emoji:</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-          {EMOJIS.map(e=><button key={e} onClick={()=>set("emoji")(e)} style={{width:34,height:34,borderRadius:8,border:`2px solid ${form.emoji===e?G.green:"#eee"}`,background:form.emoji===e?"#f0f7e8":"white",fontSize:19,cursor:"pointer"}}>{e}</button>)}
-        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{EMOJIS.map(e=><button key={e} onClick={()=>set("emoji")(e)} style={{width:34,height:34,borderRadius:8,border:`2px solid ${form.emoji===e?G.green:"#eee"}`,background:form.emoji===e?"#f0f7e8":"white",fontSize:19,cursor:"pointer"}}>{e}</button>)}</div>
       </div>
-
-      {inp(form.badge,set("badge"),"Badge (e.g. Bestseller) — optional")}
-
-      {/* ── VARIANTS ── */}
+      {inp(form.badge,set("badge"),"Badge (Bestseller) — optional")}
       <div style={{background:"#e8f5e9",borderRadius:10,padding:"10px 12px",marginBottom:8}}>
-        <div style={{fontWeight:600,fontSize:13,color:G.green,marginBottom:8}}>⚖️ Unit Variants (500g, 1kg etc.)</div>
-        <div style={{fontSize:11,color:"#666",marginBottom:8}}>Agar variants hain toh normal price ignore hoga</div>
+        <div style={{fontWeight:600,fontSize:13,color:G.green,marginBottom:8}}>⚖️ Unit Variants</div>
         {variants.map((v,i)=>(
           <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-            <input value={v.unit} onChange={e=>updateVariant(i,"unit",e.target.value)} placeholder="Unit (500g)"
-              style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #c8e6c9",fontSize:13,outline:"none"}}/>
-            <input type="number" value={v.price} onChange={e=>updateVariant(i,"price",+e.target.value)} placeholder="₹"
-              style={{width:80,padding:"7px 10px",borderRadius:8,border:"1.5px solid #c8e6c9",fontSize:13,outline:"none"}}/>
-            <button onClick={()=>removeVariant(i)} style={{background:"#fce8e6",border:"none",borderRadius:8,width:30,height:30,cursor:"pointer",color:G.red,fontWeight:700}}>✕</button>
+            <input value={v.unit} onChange={e=>updV(i,"unit",e.target.value)} placeholder="500g" style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1.5px solid #c8e6c9",fontSize:13,outline:"none"}}/>
+            <input type="number" value={v.price} onChange={e=>updV(i,"price",+e.target.value)} placeholder="₹" style={{width:75,padding:"7px 10px",borderRadius:8,border:"1.5px solid #c8e6c9",fontSize:13,outline:"none"}}/>
+            <button onClick={()=>delV(i)} style={{background:"#fce8e6",border:"none",borderRadius:8,width:28,height:28,cursor:"pointer",color:G.red,fontWeight:700}}>✕</button>
           </div>
         ))}
-        <button onClick={addVariant} style={{background:G.green,color:"white",border:"none",borderRadius:8,padding:"7px 14px",cursor:"pointer",fontWeight:600,fontSize:13}}>+ Variant Add Karo</button>
+        <button onClick={addV} style={{background:G.green,color:"white",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontWeight:600,fontSize:12}}>+ Variant Add Karo</button>
       </div>
-
-      {/* Order Limit */}
       <div style={{background:"#f0f7e8",borderRadius:10,padding:"10px 12px",marginBottom:8}}>
-        <div style={{fontWeight:600,fontSize:13,color:G.green,marginBottom:6}}>🔢 Max Order Limit (0 = unlimited)</div>
-        <input type="number" min="0" value={form.orderLimit||0} onChange={e=>set("orderLimit")(+e.target.value)}
-          style={{width:80,padding:"7px 10px",borderRadius:8,border:"1.5px solid #e0d5c0",fontSize:14,outline:"none"}}/>
+        <div style={{fontWeight:600,fontSize:13,color:G.green,marginBottom:6}}>🔢 Max Order Limit (0=unlimited)</div>
+        <input type="number" min="0" value={form.orderLimit||0} onChange={e=>set("orderLimit")(+e.target.value)} style={{width:75,padding:"7px 10px",borderRadius:8,border:"1.5px solid #e0d5c0",fontSize:14,outline:"none"}}/>
       </div>
-
-      {/* Special Price */}
       <div style={{background:"#fff3e0",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
         <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:hasSpecial?10:0}}>
           <input type="checkbox" checked={hasSpecial} onChange={e=>setHasSpecial(e.target.checked)} style={{width:18,height:18}}/>
@@ -235,29 +229,17 @@ function ProductForm({p,onSave,onCancel}){
         </label>
         {hasSpecial&&(
           <div>
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:11,color:"#888",marginBottom:3}}>Min order (₹)</div>
-                <input type="number" value={sp.minOrderAmt} onChange={e=>setSp(s=>({...s,minOrderAmt:+e.target.value}))}
-                  style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1.5px solid #ffcc80",fontSize:14,outline:"none"}}/>
-              </div>
-              <div style={{fontSize:18,color:"#e65100",marginTop:14}}>→</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:11,color:"#888",marginBottom:3}}>Special price (₹)</div>
-                <input type="number" value={sp.price} onChange={e=>setSp(s=>({...s,price:+e.target.value}))}
-                  style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1.5px solid #ffcc80",fontSize:14,outline:"none"}}/>
-              </div>
+            <div style={{display:"flex",gap:8}}>
+              <div style={{flex:1}}><div style={{fontSize:11,color:"#888",marginBottom:3}}>Min order (₹)</div><input type="number" value={sp.minOrderAmt} onChange={e=>setSp(s=>({...s,minOrderAmt:+e.target.value}))} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1.5px solid #ffcc80",fontSize:14,outline:"none"}}/></div>
+              <div style={{flex:1}}><div style={{fontSize:11,color:"#888",marginBottom:3}}>Special (₹)</div><input type="number" value={sp.price} onChange={e=>setSp(s=>({...s,price:+e.target.value}))} style={{width:"100%",padding:"7px 10px",borderRadius:8,border:"1.5px solid #ffcc80",fontSize:14,outline:"none"}}/></div>
             </div>
-            <div style={{marginTop:8,fontSize:12,color:"#e65100",background:"rgba(255,152,0,0.1)",padding:"6px 10px",borderRadius:8}}>
-              ✅ ₹{sp.minOrderAmt}+ order pe sirf ₹{sp.price} mein!
-            </div>
+            <div style={{marginTop:8,fontSize:12,color:"#e65100",background:"rgba(255,152,0,0.1)",padding:"6px 10px",borderRadius:8}}>✅ ₹{sp.minOrderAmt}+ order pe ₹{sp.price} mein!</div>
           </div>
         )}
       </div>
-
       <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,cursor:"pointer"}}>
         <input type="checkbox" checked={!!form.featured} onChange={e=>set("featured")(e.target.checked)} style={{width:18,height:18}}/>
-        <span style={{fontSize:14}}>⭐ Popular section mein dikhao</span>
+        <span style={{fontSize:14}}>⭐ Popular mein dikhao</span>
       </label>
       <div style={{display:"flex",gap:8}}>
         <button onClick={handleSave} style={{flex:1,background:G.green,color:"white",border:"none",borderRadius:10,padding:12,fontWeight:700,cursor:"pointer",fontSize:14}}>💾 Save</button>
@@ -268,8 +250,8 @@ function ProductForm({p,onSave,onCancel}){
 }
 
 // ── AD FORM ──
-function AdForm({a,onSave,onCancel}){
-  const [form,setForm]=useState({emoji:"🏪",bg:BG_OPTIONS[0].val,...a});
+function AdForm({a, onSave, onCancel}) {
+  const [form, setForm]=useState({emoji:"🏪",bg:BG_OPTIONS[0].val,...a});
   const set=k=>v=>setForm(f=>({...f,[k]:v}));
   const inp=(val,onChange,ph)=><input type="text" value={val||""} onChange={e=>onChange(e.target.value)} placeholder={ph} style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #e0d5c0",fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:8,background:"white"}}/>;
   return(
@@ -279,14 +261,8 @@ function AdForm({a,onSave,onCancel}){
       {inp(form.tagline,set("tagline"),"Tagline")}
       {inp(form.offer,set("offer"),"Offer text")}
       {inp(form.phone,set("phone"),"Phone (10 digit)")}
-      <div style={{marginBottom:8}}>
-        <div style={{fontSize:12,color:"#888",marginBottom:5}}>Emoji:</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{EMOJIS.slice(0,15).map(e=><button key={e} onClick={()=>set("emoji")(e)} style={{width:34,height:34,borderRadius:8,border:`2px solid ${form.emoji===e?"#e65100":"#eee"}`,background:form.emoji===e?"#fff3e0":"white",fontSize:19,cursor:"pointer"}}>{e}</button>)}</div>
-      </div>
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:12,color:"#888",marginBottom:5}}>Background:</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{BG_OPTIONS.map(b=><button key={b.val} onClick={()=>set("bg")(b.val)} style={{background:b.val,borderRadius:8,padding:"6px 12px",border:`3px solid ${form.bg===b.val?"white":"transparent"}`,outline:form.bg===b.val?"2px solid #333":"none",color:"white",fontSize:12,fontWeight:600,cursor:"pointer"}}>{b.label}</button>)}</div>
-      </div>
+      <div style={{marginBottom:8}}><div style={{fontSize:12,color:"#888",marginBottom:5}}>Emoji:</div><div style={{display:"flex",flexWrap:"wrap",gap:5}}>{EMOJIS.slice(0,15).map(e=><button key={e} onClick={()=>set("emoji")(e)} style={{width:34,height:34,borderRadius:8,border:`2px solid ${form.emoji===e?"#e65100":"#eee"}`,background:form.emoji===e?"#fff3e0":"white",fontSize:19,cursor:"pointer"}}>{e}</button>)}</div></div>
+      <div style={{marginBottom:12}}><div style={{fontSize:12,color:"#888",marginBottom:5}}>Background:</div><div style={{display:"flex",flexWrap:"wrap",gap:6}}>{BG_OPTIONS.map(b=><button key={b.val} onClick={()=>set("bg")(b.val)} style={{background:b.val,borderRadius:8,padding:"6px 12px",border:`3px solid ${form.bg===b.val?"white":"transparent"}`,outline:form.bg===b.val?"2px solid #333":"none",color:"white",fontSize:12,fontWeight:600,cursor:"pointer"}}>{b.label}</button>)}</div></div>
       <div style={{display:"flex",gap:8}}>
         <button onClick={()=>onSave(form)} style={{flex:1,background:"#e65100",color:"white",border:"none",borderRadius:10,padding:12,fontWeight:700,cursor:"pointer",fontSize:14}}>💾 Save</button>
         <button onClick={onCancel} style={{flex:1,background:"#eee",border:"none",borderRadius:10,padding:12,fontWeight:700,cursor:"pointer",fontSize:14}}>Cancel</button>
@@ -296,31 +272,54 @@ function AdForm({a,onSave,onCancel}){
 }
 
 // ── ADMIN PANEL ──
-function AdminPanel({onClose}){
-  const [tab,setTab]=useState("products");
-  const [products,setProducts]=useState(()=>load("products",DEFAULT_PRODUCTS));
-  const [ads,setAds]=useState(()=>load("ads",DEFAULT_ADS));
-  const [editingP,setEditingP]=useState(null);
-  const [editingA,setEditingA]=useState(null);
-  const [toast,setToast]=useState("");
-  const showToast=m=>{setToast(m);setTimeout(()=>setToast(""),2500);};
-  const saveP=p=>{const l=p.id?products.map(x=>x.id===p.id?p:x):[...products,{...p,id:Date.now()}];setProducts(l);save("products",l);setEditingP(null);showToast("✅ Saved!");};
-  const delP=id=>{const l=products.filter(x=>x.id!==id);setProducts(l);save("products",l);showToast("🗑️ Deleted!");};
-  const saveA=a=>{const l=a.id?ads.map(x=>x.id===a.id?a:x):[...ads,{...a,id:Date.now()}];setAds(l);save("ads",l);setEditingA(null);showToast("✅ Ad Saved!");};
-  const delA=id=>{const l=ads.filter(x=>x.id!==id);setAds(l);save("ads",l);showToast("🗑️ Ad Deleted!");};
+function AdminPanel({data, onSave, onClose}) {
+  const [tab, setTab]=useState("products");
+  const [products, setProducts]=useState(data.products);
+  const [ads, setAds]=useState(data.ads);
+  const [editingP, setEditingP]=useState(null);
+  const [editingA, setEditingA]=useState(null);
+  const [toast, setToast]=useState("");
+  const [saving, setSaving]=useState(false);
+
+  const showToast=m=>{setToast(m);setTimeout(()=>setToast(""),3000);};
+
+  const saveAll=async()=>{
+    setSaving(true);
+    const ok=await onSave({products,ads});
+    setSaving(false);
+    if(ok) showToast("✅ Sab customers ko update ho gaya!");
+    else showToast("❌ Save nahi hua — JSONBin setup karo!");
+  };
+
+  const saveP=p=>{const l=p.id?products.map(x=>x.id===p.id?p:x):[...products,{...p,id:Date.now()}];setProducts(l);setEditingP(null);showToast("✅ Product ready — 'Publish' dabao!");};
+  const delP=id=>{setProducts(products.filter(x=>x.id!==id));showToast("🗑️ Deleted — 'Publish' dabao!");};
+  const saveA=a=>{const l=a.id?ads.map(x=>x.id===a.id?a:x):[...ads,{...a,id:Date.now()}];setAds(l);setEditingA(null);showToast("✅ Ad ready — 'Publish' dabao!");};
+  const delA=id=>{setAds(ads.filter(x=>x.id!==id));showToast("🗑️ Ad deleted — 'Publish' dabao!");};
+
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:1000,display:"flex",justifyContent:"center",alignItems:"flex-start",overflowY:"auto"}}>
-      <div style={{background:"#f5f5f5",width:"100%",maxWidth:480,minHeight:"100vh",animation:"fadeIn 0.3s ease"}}>
+      <div style={{background:"#f5f5f5",width:"100%",maxWidth:480,minHeight:"100vh"}}>
         <div style={{background:"linear-gradient(135deg,#1a1a2e,#16213e)",padding:"16px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:10}}>
           <div><div style={{fontSize:10,color:"#a8d87a",letterSpacing:2,textTransform:"uppercase"}}>Admin Panel</div><div style={{color:"white",fontWeight:700,fontSize:17}}>{STORE_NAME}</div></div>
-          <button onClick={onClose} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:10,padding:"8px 14px",color:"white",cursor:"pointer",fontWeight:700}}>✕ Band</button>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:10,padding:"8px 12px",color:"white",cursor:"pointer",fontWeight:700}}>✕</button>
         </div>
+
+        {/* PUBLISH BUTTON */}
+        <div style={{padding:"10px 16px",background:"#1a1a2e"}}>
+          <button onClick={saveAll} disabled={saving} style={{width:"100%",background:saving?"#888":"#25D366",color:"white",border:"none",borderRadius:12,padding:"12px",fontWeight:700,fontSize:15,cursor:saving?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            {saving?<><div style={{width:18,height:18,border:"3px solid rgba(255,255,255,0.3)",borderTopColor:"white",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}></div>Publish ho raha hai...</>:"🚀 Publish — Sab Customers Ko Update Karo"}
+          </button>
+          {!isConfigured()&&<div style={{fontSize:11,color:"#ff8a80",textAlign:"center",marginTop:6}}>⚠️ JSONBin setup nahi hua — changes sirf tumhare phone pe save honge</div>}
+        </div>
+
         {toast&&<div style={{background:G.green,color:"white",textAlign:"center",padding:"10px",fontWeight:600,fontSize:13}}>{toast}</div>}
+
         <div style={{display:"flex",background:"white",borderBottom:"2px solid #eee"}}>
           {[["products","📦 Products"],["ads","📢 Ads"]].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setEditingP(null);setEditingA(null);}} style={{flex:1,padding:"13px",border:"none",background:"none",fontWeight:700,fontSize:14,cursor:"pointer",color:tab===t?G.green:"#999",borderBottom:tab===t?`3px solid ${G.green}`:"3px solid transparent"}}>{l}</button>
           ))}
         </div>
+
         <div style={{padding:16}}>
           {tab==="products"&&(editingP!==null?<ProductForm p={editingP} onSave={saveP} onCancel={()=>setEditingP(null)}/>:(
             <>
@@ -330,10 +329,7 @@ function AdminPanel({onClose}){
                   <ProductImg img={p.img} emoji={p.emoji} size={44}/>
                   <div style={{flex:1}}>
                     <div style={{fontWeight:600,fontSize:13}}>{p.name}</div>
-                    <div style={{fontSize:11,color:"#888"}}>
-                      {p.variants&&p.variants.length>0?p.variants.map(v=>`${v.unit}:₹${v.price}`).join(" • "):`₹${p.price}`}
-                      {p.orderLimit>0&&<span style={{color:"#e65100"}}> • Max {p.orderLimit}</span>}
-                    </div>
+                    <div style={{fontSize:11,color:"#888"}}>{p.variants&&p.variants.length>0?p.variants.map(v=>`${v.unit}:₹${v.price}`).join(" • "):`₹${p.price}`}</div>
                   </div>
                   <button onClick={()=>setEditingP(p)} style={{background:"#e8f0fe",border:"none",borderRadius:8,padding:"6px 10px",cursor:"pointer",color:"#1967d2",fontWeight:600,fontSize:12}}>✏️</button>
                   <button onClick={()=>delP(p.id)} style={{background:"#fce8e6",border:"none",borderRadius:8,padding:"6px 10px",cursor:"pointer",color:G.red,fontWeight:600,fontSize:12}}>🗑️</button>
@@ -361,33 +357,55 @@ function AdminPanel({onClose}){
   );
 }
 
+// ══════════════════════════════════════
 // ── MAIN APP ──
-function App(){
-  const [products,setProducts]=useState(()=>load("products",DEFAULT_PRODUCTS));
-  const [ads,setAds]=useState(()=>load("ads",DEFAULT_ADS));
-  const [cart,setCart]=useState({}); // {productId_variantIndex: qty} or {productId_: qty}
-  const [selVariant,setSelVariant]=useState({}); // {productId: variantIndex}
-  const [activeCat,setActiveCat]=useState("all");
-  const [search,setSearch]=useState("");
-  const [view,setView]=useState("shop");
-  const [deliveryType,setDeliveryType]=useState("delivery");
-  const [customerName,setCustomerName]=useState("");
-  const [customerAddr,setCustomerAddr]=useState("");
-  const [ordered,setOrdered]=useState(false);
-  const [showAdmin,setShowAdmin]=useState(false);
-  const [adminPass,setAdminPass]=useState("");
-  const [showPassPrompt,setShowPassPrompt]=useState(false);
-  const [passError,setPassError]=useState("");
-  const [tapCount,setTapCount]=useState(0);
-  const [limitWarn,setLimitWarn]=useState("");
+// ══════════════════════════════════════
+function App() {
+  const [storeData, setStoreData]=useState(null);
+  const [loading, setLoading]=useState(true);
+  const [cart, setCart]=useState({});
+  const [selVariant, setSelVariant]=useState({});
+  const [activeCat, setActiveCat]=useState("all");
+  const [search, setSearch]=useState("");
+  const [view, setView]=useState("shop");
+  const [deliveryType, setDeliveryType]=useState("delivery");
+  const [customerName, setCustomerName]=useState("");
+  const [customerAddr, setCustomerAddr]=useState("");
+  const [ordered, setOrdered]=useState(false);
+  const [showAdmin, setShowAdmin]=useState(false);
+  const [adminPass, setAdminPass]=useState("");
+  const [showPassPrompt, setShowPassPrompt]=useState(false);
+  const [passError, setPassError]=useState("");
+  const [tapCount, setTapCount]=useState(0);
+  const [limitWarn, setLimitWarn]=useState("");
 
-  const handleAdminClose=()=>{setProducts(load("products",DEFAULT_PRODUCTS));setAds(load("ads",DEFAULT_ADS));setShowAdmin(false);};
+  // Load data from cloud on mount
+  useEffect(()=>{
+    fetchData().then(d=>{setStoreData(d);setLoading(false);});
+  },[]);
+
   const handleLogoTap=()=>{const n=tapCount+1;setTapCount(n);if(n>=5){setTapCount(0);setShowPassPrompt(true);}setTimeout(()=>setTapCount(0),2000);};
   const checkPass=()=>{if(adminPass===ADMIN_PASSWORD){setShowPassPrompt(false);setAdminPass("");setPassError("");setShowAdmin(true);}else setPassError("❌ Galat password!");};
 
-  const getVariantIdx=(pid)=>selVariant[pid]??0;
-  const getVariantPrice=(p,vi)=>{if(p.variants&&p.variants.length>0&&p.variants[vi]) return p.variants[vi].price; return p.price;};
-  const getVariantUnit=(p,vi)=>{if(p.variants&&p.variants.length>0&&p.variants[vi]) return p.variants[vi].unit; return "";};
+  const handleAdminSave=async(newData)=>{
+    const ok=await pushData(newData);
+    setStoreData(newData);
+    return ok;
+  };
+
+  if(loading) return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:G.bg,gap:16}}>
+      <Spinner/>
+      <div style={{fontSize:14,color:G.green,fontWeight:600}}>Store load ho raha hai...</div>
+    </div>
+  );
+
+  const products=storeData.products||[];
+  const ads=storeData.ads||[];
+
+  const getVI=pid=>selVariant[pid]??0;
+  const getVP=(p,vi)=>p.variants&&p.variants.length>0&&p.variants[vi]?p.variants[vi].price:p.price;
+  const getVU=(p,vi)=>p.variants&&p.variants.length>0&&p.variants[vi]?p.variants[vi].unit:"";
   const cartKey=(pid,vi)=>`${pid}_${vi}`;
 
   const allCats=[{id:"all",label:"🛒 Sab"},{id:"featured",label:"⭐ Popular"},...CATEGORIES];
@@ -397,23 +415,13 @@ function App(){
     return p.name.toLowerCase().includes(search.toLowerCase());
   }),[activeCat,search,products]);
 
-  // Cart items with full info
   const cartEntries=Object.entries(cart).filter(([_,q])=>q>0).map(([key,qty])=>{
     const [pid,vi]=key.split("_");
-    const p=products.find(x=>x.id===+pid);
-    if(!p) return null;
-    const variantIdx=+vi;
-    const varPrice=getVariantPrice(p,variantIdx);
-    const unit=getVariantUnit(p,variantIdx);
-    // effective price based on other subtotal
-    const otherSub=Object.entries(cart).filter(([k2,q2])=>q2>0&&k2!==key).reduce((s,[k2,q2])=>{
-      const [p2id,v2i]=k2.split("_");
-      const p2=products.find(x=>x.id===+p2id);
-      if(!p2) return s;
-      return s+getVariantPrice(p2,+v2i)*q2;
-    },0);
-    const ep=effectivePrice(p,otherSub,varPrice);
-    return {key,p,qty,variantIdx,varPrice,unit,ep};
+    const p=products.find(x=>x.id===+pid); if(!p) return null;
+    const vIdx=+vi, vp=getVP(p,vIdx), unit=getVU(p,vIdx);
+    const otherSub=Object.entries(cart).filter(([k2,q2])=>q2>0&&k2!==key).reduce((s,[k2,q2])=>{const[p2id,v2i]=k2.split("_");const p2=products.find(x=>x.id===+p2id);return s+(p2?getVP(p2,+v2i)*q2:0);},0);
+    const ep=effectivePrice(p,otherSub,vp);
+    return{key,p,qty,vIdx,vp,unit,ep};
   }).filter(Boolean);
 
   const totalItems=cartEntries.reduce((s,e)=>s+e.qty,0);
@@ -421,14 +429,12 @@ function App(){
   const deliveryCharge=deliveryType==="delivery"?(subTotal>=MIN_DELIVERY?DELIVERY_CHARGE:0):0;
   const totalPrice=subTotal+deliveryCharge;
 
-  const addTo=(p)=>{
-    const vi=getVariantIdx(p.id);
-    const key=cartKey(p.id,vi);
-    const cur=cart[key]||0;
+  const addTo=p=>{
+    const vi=getVI(p.id), key=cartKey(p.id,vi), cur=cart[key]||0;
     if(p.orderLimit>0&&cur>=p.orderLimit){setLimitWarn(`⚠️ "${p.name}" max ${p.orderLimit} hi le sakte ho!`);setTimeout(()=>setLimitWarn(""),3000);return;}
     setCart(c=>({...c,[key]:cur+1}));
   };
-  const removeFrom=(key)=>setCart(c=>({...c,[key]:Math.max((c[key]||0)-1,0)}));
+  const removeFrom=key=>setCart(c=>({...c,[key]:Math.max((c[key]||0)-1,0)}));
 
   const sendWA=()=>{
     if(!cartEntries.length) return;
@@ -436,10 +442,9 @@ function App(){
     if(customerName) msg+=`👤 ${customerName}\n`;
     if(deliveryType==="delivery"&&customerAddr) msg+=`📍 ${customerAddr}\n`;
     msg+=`\n📦 *Items:*\n`;
-    cartEntries.forEach(({p,qty,ep,varPrice,unit})=>{
-      const isSpecial=ep<varPrice;
+    cartEntries.forEach(({p,qty,ep,vp,unit})=>{
       msg+=`${p.emoji} ${p.name}${unit?` (${unit})`:""} × ${qty} = ₹${ep*qty}`;
-      if(isSpecial) msg+=` *(Special ₹${ep})*`;
+      if(ep<vp) msg+=` *(Special ₹${ep})*`;
       msg+="\n";
     });
     msg+=`\n💵 Subtotal: ₹${subTotal}`;
@@ -471,8 +476,8 @@ function App(){
         </div>
       )}
 
-      {showAdmin&&<AdminPanel onClose={handleAdminClose}/>}
-      {limitWarn&&<div style={{position:"fixed",top:70,left:"50%",transform:"translateX(-50%)",background:G.red,color:"white",padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:600,zIndex:500,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",maxWidth:320,textAlign:"center"}}>{limitWarn}</div>}
+      {showAdmin&&<AdminPanel data={storeData} onSave={handleAdminSave} onClose={()=>setShowAdmin(false)}/>}
+      {limitWarn&&<div style={{position:"fixed",top:70,left:"50%",transform:"translateX(-50%)",background:G.red,color:"white",padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:600,zIndex:500,textAlign:"center",maxWidth:300}}>{limitWarn}</div>}
 
       {/* HEADER */}
       <div style={{background:`linear-gradient(135deg,${G.green},#3d6b1f)`,padding:"18px 16px 14px",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(45,80,22,0.4)"}}>
@@ -496,43 +501,22 @@ function App(){
           {ads.length>0&&<AdBanner ads={ads}/>}
           {products.some(p=>p.specialPrice)&&(
             <div style={{margin:"10px 16px 0",background:"linear-gradient(135deg,#ff6b35,#ff4444)",borderRadius:12,padding:"10px 14px"}}>
-              <div style={{color:"white",fontWeight:700,fontSize:13}}>🏷️ Special Offers Active!</div>
-              {products.filter(p=>p.specialPrice).map(p=>(
-                <div key={p.id} style={{color:"rgba(255,255,255,0.9)",fontSize:11,marginTop:2}}>{p.emoji} {p.name}: ₹{p.specialPrice.minOrderAmt}+ order pe sirf ₹{p.specialPrice.price}!</div>
-              ))}
+              <div style={{color:"white",fontWeight:700,fontSize:13}}>🏷️ Special Offers!</div>
+              {products.filter(p=>p.specialPrice).map(p=><div key={p.id} style={{color:"rgba(255,255,255,0.9)",fontSize:11,marginTop:2}}>{p.emoji} {p.name}: ₹{p.specialPrice.minOrderAmt}+ pe ₹{p.specialPrice.price}!</div>)}
             </div>
           )}
           <div style={{padding:"10px 16px",overflowX:"auto",display:"flex",gap:8}}>
             {allCats.map(c=><button key={c.id} onClick={()=>setActiveCat(c.id)} style={{flexShrink:0,padding:"7px 14px",borderRadius:20,border:"2px solid",borderColor:activeCat===c.id?G.green:"#e0d5c0",background:activeCat===c.id?G.green:"white",color:activeCat===c.id?"white":"#555",fontWeight:600,fontSize:12,cursor:"pointer"}}>{c.label}</button>)}
           </div>
           <div style={{padding:"0 16px 130px"}}>
-            <div style={{fontSize:12,color:"#999",marginBottom:8}}>{filtered.length} items</div>
             {listWithAds.map((item,idx)=>{
-              if(item.type==="ad"){
-                const a=item.data;
-                return<div key={"ad"+idx} style={{borderRadius:12,overflow:"hidden",marginBottom:10,boxShadow:"0 3px 12px rgba(0,0,0,0.1)"}}>
-                  <div style={{background:a.bg,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{fontSize:26}}>{a.emoji}</div>
-                    <div style={{flex:1}}><div style={{fontSize:8,color:"rgba(255,255,255,0.65)",letterSpacing:2,textTransform:"uppercase"}}>Sponsored</div><div style={{color:"white",fontWeight:700,fontSize:13}}>{a.business}</div><div style={{color:"rgba(255,255,255,0.8)",fontSize:11}}>{a.offer}</div></div>
-                    <a href={"tel:+91"+a.phone} style={{background:"rgba(255,255,255,0.25)",padding:"5px 10px",borderRadius:8,color:"white",fontSize:11,fontWeight:700,textDecoration:"none"}}>📞</a>
-                  </div>
-                </div>;
-              }
-              const p=item.data;
-              const vi=getVariantIdx(p.id);
-              const hasVariants=p.variants&&p.variants.length>0;
-              const displayPrice=hasVariants?p.variants[vi]?.price:p.price;
-              const cartK=cartKey(p.id,vi);
-              const curQty=cart[cartK]||0;
-              const otherSub=cartEntries.filter(e=>e.key!==cartK).reduce((s,e)=>s+e.ep*e.qty,0);
-              const ep=effectivePrice(p,otherSub,displayPrice);
-              const isSpecial=ep<displayPrice;
+              if(item.type==="ad"){const a=item.data;return<div key={"ad"+idx} style={{borderRadius:12,overflow:"hidden",marginBottom:10,boxShadow:"0 3px 12px rgba(0,0,0,0.1)"}}><div style={{background:a.bg,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:26}}>{a.emoji}</div><div style={{flex:1}}><div style={{fontSize:8,color:"rgba(255,255,255,0.65)",letterSpacing:2,textTransform:"uppercase"}}>Sponsored</div><div style={{color:"white",fontWeight:700,fontSize:13}}>{a.business}</div><div style={{color:"rgba(255,255,255,0.8)",fontSize:11}}>{a.offer}</div></div><a href={"tel:+91"+a.phone} style={{background:"rgba(255,255,255,0.25)",padding:"5px 10px",borderRadius:8,color:"white",fontSize:11,fontWeight:700,textDecoration:"none"}}>📞</a></div></div>;}
+              const p=item.data, vi=getVI(p.id), hasV=p.variants&&p.variants.length>0, dp=hasV?p.variants[vi]?.price:p.price, ck=cartKey(p.id,vi), cq=cart[ck]||0;
+              const otherSub=cartEntries.filter(e=>e.key!==ck).reduce((s,e)=>s+e.ep*e.qty,0);
+              const ep=effectivePrice(p,otherSub,dp), isSp=ep<dp;
               return(
-                <div key={p.id} style={{background:"white",borderRadius:14,marginBottom:9,overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",border:curQty>0?`2px solid ${G.light}`:"2px solid transparent"}}>
-                  {/* Product Image (if present) */}
-                  {p.img&&<div style={{width:"100%",height:140,overflow:"hidden",borderBottom:"1px solid #f0e8d8"}}>
-                    <img src={p.img} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.parentElement.style.display="none"} alt={p.name}/>
-                  </div>}
+                <div key={p.id+"_"+vi} style={{background:"white",borderRadius:14,marginBottom:9,overflow:"hidden",boxShadow:"0 2px 10px rgba(0,0,0,0.06)",border:cq>0?`2px solid ${G.light}`:"2px solid transparent"}}>
+                  {p.img&&<div style={{width:"100%",height:140,overflow:"hidden"}}><img src={p.img} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>e.target.parentElement.style.display="none"} alt={p.name}/></div>}
                   <div style={{padding:"12px 14px",display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
                     <div style={{display:"flex",alignItems:"flex-start",gap:10,flex:1}}>
                       {!p.img&&<ProductImg img="" emoji={p.emoji} size={46}/>}
@@ -543,25 +527,13 @@ function App(){
                           {p.orderLimit>0&&<span style={{background:"#f3e5f5",color:"#6a1b9a",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:20}}>Max {p.orderLimit}</span>}
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
-                          {isSpecial?(<><span style={{fontSize:16,fontWeight:700,color:G.green}}>₹{ep}</span><span style={{fontSize:12,color:"#aaa",textDecoration:"line-through"}}>₹{displayPrice}</span><span style={{background:"#e8f5e9",color:G.green,fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:20}}>🏷️</span></>):
-                          (<><span style={{fontSize:16,fontWeight:700,color:G.green}}>₹{displayPrice}</span>{p.specialPrice&&<span style={{fontSize:10,color:"#e65100",background:"#fff3e0",padding:"2px 6px",borderRadius:20}}>₹{p.specialPrice.price} on ₹{p.specialPrice.minOrderAmt}+</span>}</>)}
+                          {isSp?<><span style={{fontSize:16,fontWeight:700,color:G.green}}>₹{ep}</span><span style={{fontSize:12,color:"#aaa",textDecoration:"line-through"}}>₹{dp}</span><span style={{background:"#e8f5e9",color:G.green,fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:20}}>🏷️</span></>:<><span style={{fontSize:16,fontWeight:700,color:G.green}}>₹{dp}</span>{p.specialPrice&&<span style={{fontSize:10,color:"#e65100",background:"#fff3e0",padding:"2px 6px",borderRadius:20}}>₹{p.specialPrice.price} on ₹{p.specialPrice.minOrderAmt}+</span>}</>}
                         </div>
-                        {/* Variant selector */}
-                        {hasVariants&&(
-                          <VariantSelector variants={p.variants} selected={vi} onChange={newVi=>{setSelVariant(s=>({...s,[p.id]:newVi}));}}/>
-                        )}
+                        {hasV&&<VariantSelector variants={p.variants} selected={vi} onChange={newVi=>setSelVariant(s=>({...s,[p.id]:newVi}))}/>}
                       </div>
                     </div>
                     <div style={{flexShrink:0,marginLeft:8,marginTop:2}}>
-                      {curQty>0?(
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <button onClick={()=>removeFrom(cartK)} style={{width:28,height:28,borderRadius:8,background:"#fee2e2",border:"none",cursor:"pointer",fontSize:16,color:"#cc3333",fontWeight:700}}>−</button>
-                          <span style={{fontWeight:700,fontSize:15,minWidth:20,textAlign:"center"}}>{curQty}</span>
-                          <button onClick={()=>addTo(p)} style={{width:28,height:28,borderRadius:8,background:p.orderLimit>0&&curQty>=p.orderLimit?"#ccc":G.green,border:"none",cursor:"pointer",fontSize:16,color:"white",fontWeight:700}}>+</button>
-                        </div>
-                      ):(
-                        <button onClick={()=>addTo(p)} style={{background:G.green,color:"white",border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",fontWeight:600,fontSize:13}}>+ Add</button>
-                      )}
+                      {cq>0?(<div style={{display:"flex",alignItems:"center",gap:6}}><button onClick={()=>removeFrom(ck)} style={{width:28,height:28,borderRadius:8,background:"#fee2e2",border:"none",cursor:"pointer",fontSize:16,color:"#cc3333",fontWeight:700}}>−</button><span style={{fontWeight:700,fontSize:15,minWidth:20,textAlign:"center"}}>{cq}</span><button onClick={()=>addTo(p)} style={{width:28,height:28,borderRadius:8,background:p.orderLimit>0&&cq>=p.orderLimit?"#ccc":G.green,border:"none",cursor:"pointer",fontSize:16,color:"white",fontWeight:700}}>+</button></div>):(<button onClick={()=>addTo(p)} style={{background:G.green,color:"white",border:"none",borderRadius:10,padding:"8px 14px",cursor:"pointer",fontWeight:600,fontSize:13}}>+ Add</button>)}
                     </div>
                   </div>
                 </div>
@@ -575,45 +547,26 @@ function App(){
       {view==="cart"&&(
         <div style={{padding:"16px 16px 140px"}}>
           <div style={{fontWeight:700,fontSize:18,color:G.green,marginBottom:14}}>🛒 Aapka Cart</div>
-          {cartEntries.length===0?(
-            <div style={{textAlign:"center",padding:50,color:"#aaa"}}>
-              <div style={{fontSize:52}}>🛒</div>
-              <div style={{marginTop:10,fontSize:15}}>Cart khaali hai!</div>
-              <button onClick={()=>setView("shop")} style={{marginTop:16,background:G.green,color:"white",border:"none",borderRadius:10,padding:"10px 22px",cursor:"pointer",fontWeight:600}}>Products Dekhein</button>
-            </div>
-          ):(
+          {cartEntries.length===0?(<div style={{textAlign:"center",padding:50,color:"#aaa"}}><div style={{fontSize:52}}>🛒</div><div style={{marginTop:10}}>Cart khaali hai!</div><button onClick={()=>setView("shop")} style={{marginTop:16,background:G.green,color:"white",border:"none",borderRadius:10,padding:"10px 22px",cursor:"pointer",fontWeight:600}}>Products Dekhein</button></div>):(
             <>
               <div style={{background:"white",borderRadius:14,padding:14,marginBottom:12,boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
                 <div style={{fontWeight:600,marginBottom:10}}>🚚 Delivery ya Pickup?</div>
-                <div style={{display:"flex",gap:8}}>
-                  {[["delivery","🚚 Delivery"],["pickup","🏪 Pickup"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setDeliveryType(v)} style={{flex:1,padding:"9px 0",borderRadius:10,border:`2px solid ${deliveryType===v?G.green:"#e0d5c0"}`,background:deliveryType===v?G.green:"white",color:deliveryType===v?"white":"#555",fontWeight:600,fontSize:13,cursor:"pointer"}}>{l}</button>
-                  ))}
-                </div>
+                <div style={{display:"flex",gap:8}}>{[["delivery","🚚 Delivery"],["pickup","🏪 Pickup"]].map(([v,l])=><button key={v} onClick={()=>setDeliveryType(v)} style={{flex:1,padding:"9px 0",borderRadius:10,border:`2px solid ${deliveryType===v?G.green:"#e0d5c0"}`,background:deliveryType===v?G.green:"white",color:deliveryType===v?"white":"#555",fontWeight:600,fontSize:13,cursor:"pointer"}}>{l}</button>)}</div>
               </div>
-              {cartEntries.map(({key,p,qty,ep,varPrice,unit})=>{
-                const isSpecial=ep<varPrice;
-                return(
-                  <div key={key} style={{background:"white",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
-                      <ProductImg img={p.img} emoji={p.emoji} size={38}/>
-                      <div>
-                        <div style={{fontWeight:600,fontSize:13}}>{p.name}{unit&&<span style={{fontSize:11,color:"#888",marginLeft:4}}>({unit})</span>}</div>
-                        <div style={{fontSize:12,color:"#888",display:"flex",gap:5,alignItems:"center"}}>
-                          {isSpecial?<><span style={{color:G.green,fontWeight:700}}>₹{ep}</span><span style={{textDecoration:"line-through"}}>₹{varPrice}</span><span style={{color:G.green,fontSize:10}}>🏷️</span></>:<span>₹{ep}</span>}
-                          <span>× {qty}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-                      <button onClick={()=>removeFrom(key)} style={{width:26,height:26,borderRadius:6,background:"#fee2e2",border:"none",cursor:"pointer",color:"#cc3333",fontWeight:700}}>−</button>
-                      <span style={{fontWeight:700,minWidth:18,textAlign:"center"}}>{qty}</span>
-                      <button onClick={()=>addTo(p)} style={{width:26,height:26,borderRadius:6,background:"#e8f5d0",border:"none",cursor:"pointer",color:G.green,fontWeight:700}}>+</button>
-                      <span style={{fontWeight:700,color:G.green,minWidth:52,textAlign:"right",fontSize:14}}>₹{ep*qty}</span>
-                    </div>
+              {cartEntries.map(({key,p,qty,ep,vp,unit})=>(
+                <div key={key} style={{background:"white",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+                    <ProductImg img={p.img} emoji={p.emoji} size={38}/>
+                    <div><div style={{fontWeight:600,fontSize:13}}>{p.name}{unit&&<span style={{fontSize:11,color:"#888",marginLeft:4}}>({unit})</span>}</div><div style={{fontSize:12,color:"#888",display:"flex",gap:5}}>{ep<vp?<><span style={{color:G.green,fontWeight:700}}>₹{ep}</span><span style={{textDecoration:"line-through"}}>₹{vp}</span></>:<span>₹{ep}</span>}<span>× {qty}</span></div></div>
                   </div>
-                );
-              })}
+                  <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+                    <button onClick={()=>removeFrom(key)} style={{width:26,height:26,borderRadius:6,background:"#fee2e2",border:"none",cursor:"pointer",color:"#cc3333",fontWeight:700}}>−</button>
+                    <span style={{fontWeight:700,minWidth:18,textAlign:"center"}}>{qty}</span>
+                    <button onClick={()=>addTo(p)} style={{width:26,height:26,borderRadius:6,background:"#e8f5d0",border:"none",cursor:"pointer",color:G.green,fontWeight:700}}>+</button>
+                    <span style={{fontWeight:700,color:G.green,minWidth:52,textAlign:"right",fontSize:14}}>₹{ep*qty}</span>
+                  </div>
+                </div>
+              ))}
               <div style={{background:"white",borderRadius:12,padding:14,marginTop:10}}>
                 <div style={{fontWeight:600,marginBottom:10}}>📋 Aapki Info</div>
                 <input value={customerName} onChange={e=>setCustomerName(e.target.value)} placeholder="Aapka naam" style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid #e0d5c0",fontSize:14,boxSizing:"border-box",marginBottom:8,outline:"none"}}/>
@@ -622,30 +575,17 @@ function App(){
               <div style={{background:G.green,borderRadius:14,padding:16,marginTop:12,color:"white"}}>
                 <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:4}}><span>Subtotal</span><span>₹{subTotal}</span></div>
                 {deliveryType==="delivery"&&<div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:4}}><span>Delivery</span><span>{deliveryCharge===0?"FREE":`₹${deliveryCharge}`}</span></div>}
-                <div style={{borderTop:"1px solid rgba(255,255,255,0.2)",marginTop:8,paddingTop:10,display:"flex",justifyContent:"space-between"}}>
-                  <span style={{fontWeight:700,fontSize:15}}>Kul Raqam</span>
-                  <span style={{fontWeight:700,fontSize:22}}>₹{totalPrice}</span>
-                </div>
+                <div style={{borderTop:"1px solid rgba(255,255,255,0.2)",marginTop:8,paddingTop:10,display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:700,fontSize:15}}>Kul Raqam</span><span style={{fontWeight:700,fontSize:22}}>₹{totalPrice}</span></div>
               </div>
             </>
           )}
         </div>
       )}
 
-      {/* BOTTOM BUTTON */}
       {cartEntries.length>0&&(
         <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,padding:"12px 16px",background:"linear-gradient(to top,white 75%,transparent)",boxSizing:"border-box",zIndex:200}}>
-          {view==="shop"?(
-            <button onClick={()=>setView("cart")} style={{width:"100%",background:G.green,color:"white",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span>🛒 Cart Dekhein</span>
-              <span style={{background:"rgba(255,255,255,0.2)",padding:"4px 12px",borderRadius:20}}>{totalItems} items • ₹{subTotal}</span>
-            </button>
-          ):view==="cart"&&cartEntries.length>0?(
-            <button onClick={sendWA} style={{width:"100%",background:`linear-gradient(135deg,${G.wa},#128C7E)`,color:"white",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",justifyContent:"center",alignItems:"center",gap:10}}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.12 1.527 5.855L0 24l6.335-1.508A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.851 0-3.587-.5-5.089-1.373l-.361-.214-3.762.895.936-3.659-.237-.378A9.966 9.966 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-              WhatsApp pe Order — ₹{totalPrice}
-            </button>
-          ):null}
+          {view==="shop"?<button onClick={()=>setView("cart")} style={{width:"100%",background:G.green,color:"white",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span>🛒 Cart Dekhein</span><span style={{background:"rgba(255,255,255,0.2)",padding:"4px 12px",borderRadius:20}}>{totalItems} items • ₹{subTotal}</span></button>:
+          view==="cart"&&cartEntries.length>0?<button onClick={sendWA} style={{width:"100%",background:`linear-gradient(135deg,${G.wa},#128C7E)`,color:"white",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",justifyContent:"center",alignItems:"center",gap:10}}><svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.12 1.527 5.855L0 24l6.335-1.508A11.943 11.943 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.851 0-3.587-.5-5.089-1.373l-.361-.214-3.762.895.936-3.659-.237-.378A9.966 9.966 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>WhatsApp pe Order — ₹{totalPrice}</button>:null}
         </div>
       )}
     </div>
